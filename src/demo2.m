@@ -1,12 +1,12 @@
-clusters = 6;
+clusters = 3
 if false
-end
+
 % Create filter bank
 para = design_filter_bank(pi/8,3);
 filterBank = create_gabor_filter_bank(para);
 
 % Load image
-origImg = loadImage('gavish.jpg');
+origImg = loadImage('eggs.PNG');
 img = rgb2ntsc(origImg);
 if size(img,3) == 1
     lumImg = img;
@@ -82,3 +82,17 @@ for iter = 1:clusters
     axis image;
     subimage(origImg.*repmat(uint8(textonMap == iter),[1 1 3]));
 end
+end
+%% Sample windows
+
+[windows, coord] = extractWindows(textonMap, 30, 30);
+
+windowSize = size(windows, 2)*size(windows, 3);
+windowAmount = size(windows, 1);
+
+X2 = double(reshape(shiftdim(windows,1), windowSize, windowAmount));
+H = hist(X2,clusters);
+[clusterInd, centroids, sumD, D] = kmeans(H',clusters,'replicates',2);
+
+%% Show texton patches
+counter=1,imshow(origImg(coord(counter,1):coord(counter,2), coord(counter,3):coord(counter,4),:));
