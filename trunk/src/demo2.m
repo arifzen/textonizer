@@ -1,12 +1,12 @@
-clusters = 3
-if false
+clusters = 3;
+if true
 
 % Create filter bank
 para = design_filter_bank(pi/8,3);
 filterBank = create_gabor_filter_bank(para);
 
 % Load image
-origImg = loadImage('eggs.PNG');
+origImg = loadImage('synth_result.PNG');
 img = rgb2ntsc(origImg);
 if size(img,3) == 1
     lumImg = img;
@@ -56,7 +56,7 @@ X = [real(X1),X2];
 %X(:,end-3:end) = X(:,end-3:end)*100;
 
 % Cluster
-[clusterInd, centroids] = kmeans(X,clusters,'replicates',2);
+[clusterInd, centroids] = kmeans(X,clusters,'replicates',2,'EmptyAction','drop');
 
 % Build texton filters
 % S = zeros(100,100);
@@ -83,16 +83,53 @@ for iter = 1:clusters
     subimage(origImg.*repmat(uint8(textonMap == iter),[1 1 3]));
 end
 end
-%% Sample windows
 
-[windows, coord] = extractWindows(textonMap, 30, 30);
+for scales = [10 20 30 40]
+    
+    H = [];
+    coord = [];
+    
+    %% Sample windows
+    [windows, coord2] = extractWindows(textonMap, scales, scales);
 
-windowSize = size(windows, 2)*size(windows, 3);
-windowAmount = size(windows, 1);
+    windowSize = size(windows, 2)*size(windows, 3);
+    windowAmount = size(windows, 1);
 
-X2 = double(reshape(shiftdim(windows,1), windowSize, windowAmount));
-H = hist(X2,clusters);
-[clusterInd, centroids, sumD, D] = kmeans(H',clusters,'replicates',2);
+    %% Convert to Histogram data
+    X2 = double(reshape(shiftdim(windows,1), windowSize, windowAmount));
+    H2 = hist(X2,clusters);
+    H = [H, H2];
+    coord = [coord; coord2];
+
+%% Find texton patches
+patchClusters = 6;
+[clusterInd, centroids, sumD, D] = kmeans(H',patchClusters, 'replicates', 2,'EmptyAction','drop');
 
 %% Show texton patches
-counter=1,imshow(origImg(coord(counter,1):coord(counter,2), coord(counter,3):coord(counter,4),:));
+figure(1);
+clf;
+dispAmount = 10;
+subplot(patchClusters,dispAmount,1);
+for cIter = 1:patchClusters   
+    cInd = find(clusterInd == cIter)';    
+    if length(cInd) > dispAmount
+        cInd = cInd(1:dispAmount);
+    end
+    [J,I] = sort(D(cInd,cIter),1,'descend');
+    cInd = cInd(I);
+    
+    counter = 1;
+    for pIter = cInd
+        subImg = origImg(coord(pIter,1):coord(pIter,2), coord(pIter,3):coord(pIter,4),:);
+           
+        plotSub = sub2ind([dispAmount,patchClusters], counter, cIter);
+        
+        subplot(patchClusters,dispAmount,plotSub);
+        axis image;
+        subimage(subImg);
+
+        counter = counter + 1;
+    end    
+end
+pause;
+end
