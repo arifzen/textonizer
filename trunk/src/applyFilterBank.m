@@ -22,7 +22,7 @@ for iter=1:length(filterBank)
     imagesc(real(filteredImg));
     colormap('gray');
     drawnow;
-    
+
     % Covert to vector
     X(:,iter)= filteredImg(:);
 end

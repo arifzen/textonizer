@@ -12,7 +12,7 @@ subplot(pClusterAmount, dispAmount, 1);
 for pClusterIter = 1:pClusterAmount
     
     counter = 1;
-    for tpIter = min(length(textonPatches{pClusterIter}), dispAmount)
+    for tpIter = 1:min(length(textonPatches{pClusterIter}), dispAmount)
         
         subImg = textonPatches{pClusterIter}{tpIter};
 
