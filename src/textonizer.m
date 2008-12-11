@@ -3,9 +3,10 @@ function [textonMap, textonPatches] = textonizer(filename)
 %   Detailed explanation goes here
 
 % Set variables
-tClusterAmount = 3;
-pClusterAmount = 6;
-windowSize = [20 20];
+tClusterAmount = 6;
+pClusterAmount = 3;
+windowSizes = [10 10;20 20; 40 40];
+windowOverlap = [0.5 0.5];
 
 % Create filter bank
 para = design_filter_bank(pi/8,3);
@@ -21,10 +22,12 @@ X = extractFeatures(lumImg, chrImg, filterBank);
 textonMap = calcTextons(X, tClusterAmount, size(lumImg));
 %showTextons(filterBank, centroids);
 showTextonMap(textonMap);
-showTextonChannels(rgbImg, textonMap);
 
+pause;
+showTextonChannels(rgbImg, textonMap);
+pause;
 % Extract Histograms
-[H, coord] = extractHistograms(textonMap, tClusterAmount, windowSize);
+[H, coord] = extractHistograms(textonMap, tClusterAmount, windowSizes, windowOverlap);
 
 % Calc texton patches
 textonPatches = calcTextonPatches(rgbImg, coord, H, pClusterAmount);

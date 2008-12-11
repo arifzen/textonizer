@@ -1,15 +1,20 @@
-function [ windows, coord ] = extractWindows(img, width, height)
+function [ windows, coord ] = extractWindows(img, width, height, overlapW, overlapH)
 %EXTRACTWINDOWS Summary of this function goes here
 %   Detailed explanation goes here
+
+% Convert from ratio to abs
+overlapW = round(overlapW*width);
+overlapH = round(overlapH*height);
 
 imgWidth = size(img, 2);
 imgHeight = size(img, 1);
 
-widthInd = 1:width:(imgWidth-width);
-heightInd = 1:height:(imgHeight-height);
+widthInd = 1:overlapW:(imgWidth-width);
+heightInd = 1:overlapH:(imgHeight-height);
+
 windowAmount = length(widthInd)*length(heightInd);
 
-windows = zeros(windowAmount,width,height,'uint8');
+windows = zeros(windowAmount,height,width,'uint8');
 coord = zeros(windowAmount,4');
 
 counter = 1;
