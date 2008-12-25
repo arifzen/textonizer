@@ -2,31 +2,41 @@ function [textonMap, textonPatches] = textonizer(filename)
 %TEXTONIZER Summary of this function goes here
 %   Detailed explanation goes here
 
-% Set variables
-isEran = true;
-tClusterAmount = 3;
-pClusterAmount = 3;
-windowSizes = [10 10;20 20; 40 40];
-windowOverlap = [0.5 0.5];
+clf;
 
-% Create filter bank
-para = design_filter_bank(pi/6,4);
-filterBank = create_gabor_filter_bank(para);
+if exist('CACHE','file')
+    load CACHE;
+else
 
-% Load image
-[rgbImg, lumImg, chrImg] = loadImage(filename);
+    % Set variables
+    isEran = false;
+    tClusterAmount = 3;
+    pClusterAmount = 3;
+    patchScaleClusterAmount = 10;
+    windowSizes = [10 10;20 20; 40 40];
+    windowOverlap = [0.5 0.5];
 
-% Extract features
-X = extractFeatures(lumImg, chrImg, filterBank);
+    % Create filter bank
+    para = design_filter_bank(pi/6,4);
+    filterBank = create_gabor_filter_bank(para);
 
-% Calc textons
-textonMap = calcTextons(X, tClusterAmount, size(lumImg));
-%showTextons(filterBank, centroids);
-showTextonMap(textonMap);
+    % Load image
+    [rgbImg, lumImg, chrImg] = loadImage(filename);
 
-pause;
-showTextonChannels(rgbImg, textonMap);
-pause;
+    % Extract features
+    X = extractFeatures(lumImg, chrImg, filterBank);
+
+    % Calc textons
+    textonMap = calcTextons(X, tClusterAmount, size(lumImg));
+    %showTextons(filterBank, centroids);
+    showTextonMap(textonMap);
+
+    pause;
+    showTextonChannels(rgbImg, textonMap);
+    pause;
+
+    save CACHE;
+end
 
 if isEran
 	for iter = 1:tClusterAmount
@@ -41,10 +51,35 @@ if isEran
         imshow(B);
 	end
 else
-    % Extract Histograms
-    [H, coord] = extractHistograms(textonMap, tClusterAmount, windowSizes, windowOverlap);
+    scaleAmount = size(windowSizes,1);
+    smallestScale = windowSizes(1,:);
+    
+    % Extract histograms for each scale
+    for iter = 1:scaleAmount
+        windowSize = windowSizes(iter,:);
+        
+        % Extract Histograms
+        [H{iter}, coord{iter}] = extractHistograms(textonMap, ...
+            tClusterAmount, windowSize, smallestScale./windowSize);
+    end
+    
+    histAmount = sum(cellfun(@(x) size(x,2), H));    
+    avgHistAmount = histAmount/scaleAmount;
+    
+    centroids = [];
+    % Cluster for each scale
+    for iter = 1:scaleAmount
+        
+        [clusterInd, centroids, sumD, D] = kmeans(H', pClusterAmount, ...
+            'replicates', 2,'EmptyAction', 'drop');
 
-    % Calc texton patches
-    textonPatches = calcTextonPatches(rgbImg, coord, H, pClusterAmount);
-    showTextonPatches(textonPatches, 10);
+        centroids = [centroids;temp];
+        
+        showTextonPatches(textonPatches, 10);
+    end
+
+    % Cluster over all scales
+    [textonPatches, centroids{iter}] = calcTextonPatches(rgbImg, coord{iter}, centroids, pClusterAmount);
+    showTextonPatches(textonPatches, 10);            
+    
 end

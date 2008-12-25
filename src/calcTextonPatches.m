@@ -1,4 +1,4 @@
-function textonPatches = calcTextonPatches(rgbImg, coord, H, pClusterAmount)
+function [textonPatches, centroids] = calcTextonPatches(rgbImg, coord, H, pClusterAmount)
 
 % Cluster texton patches
 [clusterInd, centroids, sumD, D] = kmeans(H', pClusterAmount, ...
