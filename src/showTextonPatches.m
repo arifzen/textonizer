@@ -20,8 +20,11 @@ for pClusterIter = 1:pClusterAmount
 
         subplot(pClusterAmount, dispAmount, plotSub);
         axis image;
-        subimage(subImg);
+        imgh = subimage(subImg);
+        set(gca,'Visible','off');
+        set(imgh,'alphaData',sum(subImg,3)>0);
 
         counter = counter + 1;
     end    
 end
+return;

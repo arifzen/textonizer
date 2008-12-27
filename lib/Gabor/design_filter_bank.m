@@ -6,6 +6,8 @@ filter_parameters.frequency = [];
 filter_parameters.orientation = [];
 
 start_frequency = 0.4;
+%start_frequency = 0.8;
+
 current_frequency = start_frequency;
 
 for k = 1:num_of_frequency_steps
