@@ -1,4 +1,4 @@
 function [rgbImg] = loadImage(imageName)
 
-filePath = ['..\in\', imageName];
+filePath = fullfile(getConst('INPUT_PATH'),imageName);
 rgbImg = imread(filePath);

@@ -29,7 +29,7 @@ function runExperiment(experimentName)
         img = imread(fullfile(inputPath,filename));
 
         fprintf('Textonizing: %s\n', name);
-        textons = textonizer(img, config, true);
+        textons = textonizer(img, config, false);
 
         showTextonPatches(textons,5);
 

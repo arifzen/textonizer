@@ -1,24 +1,22 @@
 function [textonMap] = extractVisualTextons(img, config)
-%EXTRACTVISUALTEXTONS Summary of this function goes here
-%   Detailed explanation goes here
+    %EXTRACTVISUALTEXTONS Summary of this function goes here
+    %   Detailed explanation goes here
 
-[rgbImg, lumImg, chrImg] = factorizeImage(img);
+    imageSize = [size(img,1),size(img,2)];
 
-% Set variables
-tClusterAmount = config.texton_clusters;
+    % Extract features
+    X = extractFeatures(img, config);
 
-% Create filter bank
-para = design_filter_bank(config.fb.orientations, config.fb.scales);
-filterBank = create_gabor_filter_bank(para);
+%     A = reshape(X, [imageSize,3]);
+%     B = A - min(A(:));
+%     C = B/max(B(:));
+%     imshow(C);
 
-% Extract features
-X = extractFeatures(lumImg, chrImg, filterBank);
+    % Calc textons
+    textonMap = calcTextons(X, config.texton_clusters, imageSize);
 
-% Calc textons
-textonMap = calcTextons(X, tClusterAmount, size(lumImg));
-%showTextons(filterBank, centroids);
-
-%showTextonMap(textonMap);
-%pause;
-%showTextonChannels(rgbImg, textonMap);
-%pause;
+    %showTextons(filterBank, centroids);
+    %showTextonMap(textonMap);
+    %pause;
+    %showTextonChannels(rgbImg, textonMap);
+    %pause;

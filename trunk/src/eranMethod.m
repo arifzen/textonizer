@@ -17,6 +17,9 @@ function [textons] = eranMethod(img, textonMap, config)
         areas = unique(tightMap(:));
         nzzs = hist(tightMap(:),areas);
 
+        if numel(areas) == 1
+            continue;
+        end
         switch config.texton_amount_method
             case 'absolute'
                 textonPerClass = config.texton_per_class;
