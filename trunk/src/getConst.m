@@ -14,7 +14,7 @@ switch(name)
     case 'EXP_RESULT_PATH'
         result = fullfile(getConst('EXP_PATH'),'results');
     case 'INPUT_PATH'
-        result = fullfile(getConst('ROOT'),'in');
+        result = fullfile(getConst('DATA_PATH'),'inputs');
     otherwise
         assert(false);        
 end        
