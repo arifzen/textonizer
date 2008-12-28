@@ -36,30 +36,34 @@ function [textons] = chenMethod(img, textonMap, config)
 %         %showTextonPatches(textonPatches, 10);
 %     end
     
-    pClusterAmount = 3;
+    pClusterAmount = config.texton_clusters;
     
     % Cluster over all scales
-    [clusterInd, centroids, sumD, D] = kmeans(H{1}', ...
+    [clusterInd, centroids, sumD, D] = kmeans(log(1+H{1}'), ...
         pClusterAmount, 'replicates', 2,'EmptyAction', 'drop');
 
     %% Preform NN search to obtain patches
     %[clusterInd, clusterDist] = BruteSearchMex(centroids, cell2mat(H)','k',1);
 
     % Selection - Cluster each texton class to predefined number
-    selectInd = zeros(config.texton_per_class, pClusterAmount);
+    selectInd = NaN(config.texton_per_class, pClusterAmount);
     for pClusterIter = 1:pClusterAmount
 
         pInd = find(clusterInd == pClusterIter)';    
         curH = H{1}(:,pInd);
-        [clusterInd2, centroids2, sumD2, D2] = kmeans(curH', ...
-            config.texton_per_class, 'replicates', 2,'EmptyAction', 'drop');
-        
-        [J,I] = min(D2);
-        selectInd(:, pClusterIter) = pInd(I)';
+        if numel(pInd) > config.texton_per_class    
+            [clusterInd2, centroids2, sumD2, D2] = kmeans(curH', ...
+                config.texton_per_class, 'replicates', 4,'EmptyAction', 'singleton');
+            [J,I] = min(D2);
+            selectInd(:, pClusterIter) = pInd(I)';            
+        end        
     end
     
     selectInd = selectInd(:);
+    selectInd = selectInd(~isnan(selectInd));
     coords = cell2mat(coord');
+    
+    %selectInd = 1:length(clusterInd);
     
     textonPatches = extractTextonPatches(rgbImg, ...
         coords(selectInd,:), clusterInd(selectInd), D(selectInd,:), pClusterAmount);

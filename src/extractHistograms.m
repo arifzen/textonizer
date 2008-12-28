@@ -24,7 +24,8 @@ for sizeIter = 1:size(windowSizes,1)
     H = hist(X, textonAmount);
     
     % Normalize
-    NH = [NH, H./prod(windowSize)];
+    %NH = [NH, H./prod(windowSize)];
+    NH = [NH, H];
     coords = [coords; coord];
 end
 

@@ -3,7 +3,13 @@ function [textonMap] = calcTextons(X, tClusterAmount, imgSize)
 %   Detailed explanation goes here
 
 % Cluster Textons
-clusterInd = kmeans(X, tClusterAmount,'replicates',2,'EmptyAction','drop');
+[clusterInd, centroids, sumD, D] = kmeans(X, ...
+    tClusterAmount,'replicates',4,'EmptyAction','drop','start','cluster');
 
+if numel(unique(clusterInd)) < tClusterAmount
+    disp('!===Using kmeans with start uniform==!');
+    [clusterInd, centroids, sumD, D] = kmeans(X, ...
+        tClusterAmount,'replicates',4,'EmptyAction','drop','start','uniform');
+end
 % Build texton map
 textonMap = reshape(clusterInd, imgSize);
