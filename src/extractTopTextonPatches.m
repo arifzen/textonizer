@@ -1,4 +1,4 @@
-function [textonPatches] = extractTextonPatches(rgbImg, coord, clusterInd, clusterDist, pClusterAmount)
+function [textonPatches] = extractTopTextonPatches(rgbImg, coord, clusterInd, clusterDist, pClusterAmount, top)
 
 textonPatches = cell(pClusterAmount, 1);
 
@@ -7,7 +7,7 @@ for pClusterIter = 1:pClusterAmount
     pInd = find(clusterInd == pClusterIter)';    
        
     % Sort according do proximity to centroid
-    [J,I] = sort(clusterDist(pInd,pClusterIter),1,'ascend');
+    [J,I] = sort(clusterDist(pInd,pClusterIter),1,'descend');
     pInd = pInd(I);
 
     textonPatches{pClusterIter} = cell(length(pInd), 1);
