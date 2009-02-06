@@ -2,6 +2,13 @@ function config = getDefaultConfig()
 
 config = [];
 
+config.method = 'gradient';
+
+config.gradient.max_iter = 1000;
+config.gradient.eta = 1e-6;
+config.gradient.weights.variance = 1;
+config.gradient.weights.volume = 1;
+
 config.visual.texton_clusters = 6;
 config.visual.fb.orientations = pi/6;
 config.visual.fb.scales = 4;
