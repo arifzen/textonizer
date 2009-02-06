@@ -1,14 +1,20 @@
-experimentName = 'chen14-coloronly';
+experimentName = 'gradient01';
 
 config = [];
+
+config.method = 'gradient';
+
+config.gradient.max_iter = 1000;
+config.gradient.eta = 1e-8;
+config.gradient.weights.volume = -1e6;
 
 config.visual.texton_clusters = 6;
 config.visual.fb.orientations = pi/6;
 config.visual.fb.scales = 4;
 
-config.visual.filter_dim = 0;
+config.visual.filter_dim = 3;
 config.visual.color_features = 'rgb';
-config.visual.final_pca = false;
+config.visual.final_pca = true;
 
 config.semantic.method = 'chen';
 
