@@ -1,8 +1,14 @@
 function result = getConst(name)
 
+rootPath = fullfile(fileparts(mfilename('fullpath')),'..');
+
 switch(name)
     case 'ROOT'
-        result = '..';
+        result = rootPath;
+    case 'LIB_PATH'
+        result = fullfile(rootPath,'lib');
+    case 'SRC_PATH'
+        result = fullfile(rootPath,'src');        
     case 'DATA_PATH'
         result = fullfile(getConst('ROOT'),'data');
     case 'CACHE_PATH'        
