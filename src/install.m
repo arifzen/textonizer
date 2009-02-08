@@ -1,6 +1,2 @@
-addpath('..\lib\Gabor');
-addpath('..\lib\growcut');
-addpath('..\lib\NcutImage_7');
-addpath('..\lib\pca');
-addpath('..\lib\knn');
-addpath('..\lib\imageQuilting');
+addpath(genpath(getConst('LIB_PATH')));
+addpath(genpath(getConst('SRC_PATH')));
