@@ -12,7 +12,8 @@ for iter = 1:tClusterAmount
 
     textonChannelMask = (textonMap == iter);
     borderImg = edge(lumImg.*textonChannelMask,'canny',0);
-    tightMap = extractWatertight((~textonChannelMask) | (borderImg));
+    %tightMap = extractWatertight((~textonChannelMask) | (borderImg));
+    tightMap = watertight((~textonChannelMask) | (borderImg));
 
     areas = unique(tightMap(:));
     nzzs = hist(tightMap(:),areas);

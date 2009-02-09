@@ -1,0 +1,2 @@
+* If poisson is good enough - don't quilt it!
+* Poisson uses all black pixels - even where it is the original color!

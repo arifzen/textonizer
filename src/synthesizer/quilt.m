@@ -4,6 +4,7 @@ X = double(X);
 
 simple = 1;
 err = 0.002;
+
 overlap = round(tilesize / 6);
 
 if( overlap >= tilesize )
@@ -31,8 +32,18 @@ for i=1:nrow
         best = min(distances(:));
         candidates = find(distances(:) <= (1+err)*best);
 
+        if isempty(candidates)
+            fprintf('Skipped tile!\n');
+            continue;            
+        end
+        
         idx = candidates(ceil(rand(1)*length(candidates)));
 
+%         if distances(idx)>0
+%             fprintf('Skipped tile!\n');
+%             continue;            
+%         end
+                
         [sub(1), sub(2)] = ind2sub(size(distances), idx);
         fprintf( 'Picked tile (%d, %d) out of %d candidates.  Best error=%.4f\n', sub(1), sub(2), length(candidates), best );
 

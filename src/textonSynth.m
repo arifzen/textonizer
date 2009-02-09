@@ -10,9 +10,9 @@ end
 
 function selfTest()
 
-imageName = 'paintpeel.png';
+imageName = 'stone.png';
 
-textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'visual01'), 'config');
+textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'visual02'), 'config');
 config.textonizer = textonConfig.config;
 
 img = loadImage(imageName);
@@ -21,5 +21,5 @@ newSize = newSize(1:2)*1;
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
-
+config.synthesizer.method = 'tile';
 newImg = textonSynth(img, config, true);
