@@ -18,17 +18,26 @@ if true
             imshow(uint8(canvas));
             texton = textons.classes{textonClass}(textonIter).image;
             mask = textons.classes{textonClass}(textonIter).mask;
+            box = textons.classes{textonClass}(textonIter).box;
 
             % Find place to place texton
-            A = ssd(canvasMask,mask);
-            [maxValue,maxInd] = sort(A(:));
-            p = maxValue/sum(maxValue);
-            p2 = cumsum(p);
-            maxInd2 = maxInd(find(p2>rand,1,'first'));
-            [point(1),point(2)] = ind2sub(size(A),maxInd2);
-
+            switch(config.method)
+                case 'tile'
+                    leftPoint = box(1:2);
+                case 'sparse'
+                    A = ssd(canvasMask,mask);
+                    [maxValue,maxInd] = sort(A(:));
+                    p = maxValue/sum(maxValue);
+                    p2 = cumsum(p);
+                    maxInd2 = maxInd(find(p2>rand,1,'first'));
+                    [point(1),point(2)] = ind2sub(size(A),maxInd2);
+                    leftPoint = point-round(size(mask)/2);
+                otherwise
+                    assert(false,'Bad method!');
+            end
+            
             % Draw texton to image
-            leftPoint = point-round(size(mask)/2);
+            
             for r =1:size(mask,1)
                 for c = 1:size(mask,2)
                     target = leftPoint+[r-1,c-1];
@@ -49,7 +58,7 @@ if true
     % Now perform image completion
     canvas = completePoisson(canvas);
     poissonImg = uint8(canvas);
-    
+
     save TEMP
 else
     load TEMP

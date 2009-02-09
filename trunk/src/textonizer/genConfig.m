@@ -1,4 +1,4 @@
-experimentName = 'visual01';
+experimentName = 'visual02';
 
 config = [];
 
@@ -21,7 +21,7 @@ config.semantic.method = 'eran';
 config.semantic.texton_per_class = 5;
 config.semantic.texton_clusters = 3;
 config.semantic.texton_amount_method = 'threshold';
-config.semantic.min_texton_area = 90;
+config.semantic.min_texton_area = 25;
 config.semantic.fill_holes = false;
 
 %config.semantic.scales_amount = 10;
