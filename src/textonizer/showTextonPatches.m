@@ -4,7 +4,7 @@ if nargin < 2
     dispAmount = 10;
 end
 
-pClusterAmount = length(textonPatches);
+pClusterAmount = length(textonPatches.classes);
 
 clf;
 subplot(pClusterAmount, dispAmount, 1);
@@ -12,9 +12,9 @@ subplot(pClusterAmount, dispAmount, 1);
 for pClusterIter = 1:pClusterAmount
     
     counter = 1;
-    for tpIter = 1:min(length(textonPatches{pClusterIter}), dispAmount)
+    for tpIter = 1:min(length(textonPatches.classes{pClusterIter}), dispAmount)
         
-        subImg = textonPatches{pClusterIter}{tpIter};
+        subImg = textonPatches.classes{pClusterIter}(tpIter).image;
 
         plotSub = sub2ind([dispAmount, pClusterAmount], counter, pClusterIter);
 

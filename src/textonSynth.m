@@ -10,7 +10,7 @@ end
 
 function selfTest()
 
-imageName = 'fossil.PNG';
+imageName = 'paintpeel.png';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'visual01'), 'config');
 config.textonizer = textonConfig.config;
@@ -23,9 +23,3 @@ config.synthesizer = [];
 config.synthesizer.newSize = newSize;
 
 newImg = textonSynth(img, config, true);
-
-clf;
-subplot(1,2,1), subimage(img);
-title('Original image');
-subplot(1,2,2), subimage(newImg);
-title('Synthesized image');
