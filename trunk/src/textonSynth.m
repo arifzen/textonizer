@@ -10,16 +10,16 @@ end
 
 function selfTest()
 
-imageName = 'stone.png';
+imageName = 'fossil.png';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'visual02'), 'config');
 config.textonizer = textonConfig.config;
 
 img = loadImage(imageName);
 newSize = size(img);
-newSize = newSize(1:2)*1;
+newSize = newSize(1:2)*2;
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
-config.synthesizer.method = 'tile';
+config.synthesizer.method = 'sparse';
 newImg = textonSynth(img, config, true);
