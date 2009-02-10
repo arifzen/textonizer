@@ -5,6 +5,7 @@ tClusterAmount = max(textonMap(:));
 
 textons = [];
 textons.classes = cell(tClusterAmount,1);
+textons.map = textonMap;
 
 for iter = 1:tClusterAmount
 
