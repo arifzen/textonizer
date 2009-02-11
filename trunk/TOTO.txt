@@ -1,2 +1,3 @@
-* If poisson is good enough - don't quilt it!
+* If poisson is good enough - don't quilt it! 
+	* Use feathering OR close small holes!
 * Poisson uses all black pixels - even where it is the original color!
