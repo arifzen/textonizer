@@ -40,6 +40,6 @@ for iter = 1:length(filenames)
     scaleFactor = 0.8;
     set(gcf, 'PaperPosition', [0.25 2.5 scaleFactor*8 scaleFactor*6]);
     
-    print('-dpng', outputFilename);
+    print('-painters','-dpng', outputFilename);
     close(gcf);
 end

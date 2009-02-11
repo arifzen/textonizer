@@ -10,9 +10,9 @@ end
 
 function selfTest()
 
-imageName = 'fabric.png';
+imageName = 'eggs.png';
 
-textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'fabric-01'), 'config');
+textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
 
 img = loadImage(imageName);
@@ -21,6 +21,6 @@ newSize = newSize(1:2);
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
-config.synthesizer.method = 'sparse';
-config.synthesizer.map.method = 'tile';
+config.synthesizer.method = 'stich';
+config.synthesizer.map.method = 'quilt';
 newImg = textonSynth(img, config, true);
