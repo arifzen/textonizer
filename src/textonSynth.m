@@ -10,16 +10,17 @@ end
 
 function selfTest()
 
-imageName = 'fossil.png';
+imageName = 'fabric.png';
 
-textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'visual02'), 'config');
+textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'fabric-01'), 'config');
 config.textonizer = textonConfig.config;
 
 img = loadImage(imageName);
 newSize = size(img);
-newSize = newSize(1:2)*2;
+newSize = newSize(1:2);
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
 config.synthesizer.method = 'sparse';
+config.synthesizer.map.method = 'tile';
 newImg = textonSynth(img, config, true);
