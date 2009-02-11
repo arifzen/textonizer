@@ -12,9 +12,15 @@ map = textons.map;
 %keyboard;
 
 if true
-    tileSize = 40;
-    Y = imagequilt(map, tileSize, ceil(max(newSize)/(tileSize-round(tileSize / 6))));
-    map = Y(1:newSize(1),1:newSize(2),1);    
+    switch config.map.method;
+        case 'tile'
+        case 'quilt'
+            tileSize = 40;
+            Y = imagequilt(map, tileSize, ceil(max(newSize)/(tileSize-round(tileSize / 6))));
+            map = Y(1:newSize(1),1:newSize(2),1);
+        otherwise
+            assert(false,'Bad map method!');
+    end
     save TEMP;
 else
     load TEMP;
@@ -36,13 +42,13 @@ end
 counter = 0;
 sizes = [];
 classIndices = [];
-for textonClass = 1:length(textons.classes)    
+for textonClass = 1:length(textons.classes)
     for textonIter = 1:length(textons.classes{textonClass})
-        counter = counter + 1;                
+        counter = counter + 1;
         sizes(counter) = sum(textons.classes{textonClass}(textonIter).mask(:));
         classIndices(counter) = textonClass;
         textonIndices(counter) = textonIter;
-    end    
+    end
     classMask{textonClass} = logical(map == textonClass);
 end
 
@@ -53,65 +59,96 @@ pixelsAdded = 0;
 [textonVal,textonInd] = sort(sizes,'descend');
 
 addCounter = zeros(1,textonAmount);
-addLimit = ones(1,textonAmount)*2;
+addLimit = ones(1,textonAmount)*1;
 
-isLastEffort = true;
+isLastEffort = false;
 
 % Add textons to the canvas until decided
 while isAddingTextons
- 
+
     % Select current texton
     weights = (addLimit-addCounter).*(sizes.*(sizes<=(desiredPixels-pixelsAdded)));
     index = weightedSelect(weights);
-    
+
     if isempty(index)
         if isLastEffort
             disp('Trying last effort!');
             for classIter = 1:length(textons.classes);
-                 A = classMask{classIter}.*(~canvasMask);
-                 classPixelsLeft = sum(A(:));
-                 ind = find(classIndices == classIter);
-                 classSizes = sizes(ind);
-                 [vals,inds] = sort(classSizes);
+                A = classMask{classIter}.*(~canvasMask);
+                classPixelsLeft = sum(A(:));
+                ind = find(classIndices == classIter);
+                classSizes = sizes(ind);
+                [vals,inds] = sort(classSizes);
 
-                 pixelsCounter = 0;
-                 iter = 0;
-                 while pixelsCounter<(classPixelsLeft-100) && iter < length(vals)
-                     iter = iter + 1;
-                     pixelsCounter = pixelsCounter+vals(iter);
-                 end
-                 inds3 = ind(inds(1:iter));
-                 addLimit(inds3) = addLimit(inds3)+1;
+                pixelsCounter = 0;
+                iter = 0;
+                while pixelsCounter<(classPixelsLeft-100) && iter < length(vals)
+                    iter = iter + 1;
+                    pixelsCounter = pixelsCounter+vals(iter);
+                end
+                inds3 = ind(inds(1:iter));
+                addLimit(inds3) = addLimit(inds3)+1;
             end
             isLastEffort = false;
         else
             isAddingTextons = false;
-        end      
+        end
         continue;
     end
-    
+
     textonClass = classIndices(index);
     textonIter = textonIndices(index);
-    
+
     % Add selected texton
     addCounter(index) = addCounter(index)+1;
-    
+
     % Load texton data
     texton = double(textons.classes{textonClass}(textonIter).image);
     mask = textons.classes{textonClass}(textonIter).mask;
     box = textons.classes{textonClass}(textonIter).box;
-    
+
     % Find place to place texton
     switch(config.method)
         case 'tile'
             leftPoint = box(1:2);
         case 'sparse'
-            
+
             %A = sad(~canvasMask,mask);
             %A = A.*classMask(1:size(A,1),1:size(A,2));
+
+            %A = sad((classMask{textonClass}.*(~canvasMask)),mask);
+
+            B = (0.1+0.5*exp(-0.1*bwdist(~classMask{textonClass}))).*classMask{textonClass};
+            A = sad(B.*(~canvasMask),mask);
             
-            A = sad((classMask{textonClass}.*(~canvasMask)),mask);
-            
+            if true
+                [maxValue,maxInd] = sort(A(:));
+                p = maxValue/sum(maxValue);
+                p2 = cumsum(p);
+                maxInd2 = maxInd(find(p2>rand,1,'first'));
+            else
+                [maxValue,maxInd2] = max(A(:));
+            end
+            [point(1),point(2)] = ind2sub(size(A),maxInd2);
+            leftPoint = point;
+        case 'stich'
+
+            % Get texton frame
+            frame = double(origImg(box(1):box(3),box(2):box(4),:));
+
+            % Get texton border
+            border = frame.*repmat(~mask,[1,1,3]);
+
+            % Calc maps
+            [distances, surveySizes] = ssdMask(canvas,border,canvasMask,~mask);
+
+            collisions = 1-sad((classMask{textonClass}.*(~canvasMask)),mask)/sum(mask(:));
+            %collisions = 1-sad(~canvasMask,mask)/sum(mask(:));
+
+            % Combine scores
+
+            A = (exp(-distances)-0.5).*surveySizes - collisions;
+
             if false
                 [maxValue,maxInd] = sort(A(:));
                 p = maxValue/sum(maxValue);
@@ -122,18 +159,19 @@ while isAddingTextons
             end
             [point(1),point(2)] = ind2sub(size(A),maxInd2);
             leftPoint = point;
+
         otherwise
             assert(false,'Bad method!');
     end
-    
+
     % Draw texton to image
-    
+
     for r =1:size(mask,1)
         for c = 1:size(mask,2)
             target = leftPoint+[r-1,c-1];
             if target(1) >= 1 && target(2) >= 1 && target(2) <= newSize(2) && target(1) <= newSize(1)
                 isBit = mask(r,c);
-                
+
                 if isBit
                     if canvasMask(target(1),target(2))
                         canvas(target(1),target(2),:) = (canvas(target(1),target(2),:)+texton(r,c,:))/2;
@@ -146,11 +184,11 @@ while isAddingTextons
             end
         end
     end
-    
+
     drawnow;
     imshow(uint8(canvas));
     %imshow(canvas);
-    
+
     if pixelsAdded >= desiredPixels
         isAddingTextons = false;
     end
@@ -191,9 +229,9 @@ function Z = sad(X, Y)
 for k=1:size(X,3),
     A = X(:,:,k);
     B = Y(:,:,k);
-    
+
     ab = filter2(B, A, 'valid');
-    
+
     if( k == 1 )
         Z = ab;
     else
@@ -201,10 +239,27 @@ for k=1:size(X,3),
     end;
 end;
 
-function index = weightedSelect(weights)
+function [Z,surveySizes] = ssdMask(X, Y, Am, Bm)
+% Perform SSD with respect to alpha values
 
-A = weights/sum(weights);
-[maxValue,maxInd] = sort(A(:));
-p = maxValue/sum(maxValue);
-p2 = cumsum(p);
-index = maxInd(find(p2>rand,1,'first'));
+K = ones(size(Y,1), size(Y,2));
+
+for k=1:size(X,3),
+    A = X(:,:,k);
+    B = Y(:,:,k);
+
+    a2 = filter2(K, A.^2, 'valid');
+    b2 = sum(sum(B.^2));
+    ab = filter2(B, A, 'valid').*2;
+
+    b2am = filter2(B.^2, ~Am, 'valid');
+    a2bm = filter2(~Bm, A.^2, 'valid');
+
+    if( k == 1 )
+        Z = (a2 - ab + b2 -b2am -a2bm);
+    else
+        Z = Z + (a2 - ab + b2 -b2am -a2bm);
+    end;
+end;
+
+surveySizes = filter2(Bm, Am, 'valid')./sum(Bm(:));
