@@ -7,10 +7,16 @@ if ~exist(outputPath,'file')
     mkdir(outputPath);
 end
 
-% Create list of images
 inputPath = getConst('INPUT_PATH');
-A = dir(fullfile(inputPath,'*.png'));
-filenames = {A.name};
+
+if isempty(config.filenames)
+    % Create list of images
+
+    A = dir(fullfile(inputPath,'*.png'));
+    filenames = {A.name};
+else
+    filenames = config.filenames;
+end
 
 % Go over input images
 for iter = 1:length(filenames)

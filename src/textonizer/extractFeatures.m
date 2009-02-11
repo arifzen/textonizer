@@ -26,11 +26,12 @@ function X = extractFeatures(img, config)
     end
 
     % Dim reduction
-    options.ReducedDim = config.filter_dim;
-
-    [EIGVECTOR, EIGVALUE, MEANDATA, NEW_DATA]=pca(X,options);
-    X = NEW_DATA;
-
+    if config.filter_dim
+        options.ReducedDim = config.filter_dim;    
+        [EIGVECTOR, EIGVALUE, MEANDATA, NEW_DATA]=pca(X,options);
+        X = NEW_DATA;
+    end
+    
     % Add Color features
     switch(config.color_features)
         case 'none'
