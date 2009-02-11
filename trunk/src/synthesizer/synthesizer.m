@@ -7,6 +7,7 @@ canvas = zeros([newSize 3]);
 canvasMask = logical(zeros(newSize));
 isAddingTextons = true;
 map = textons.map;
+textonClassAmount = length(textons.classes);
 
 % Transform texton map
 %keyboard;
@@ -21,13 +22,23 @@ if true
         otherwise
             assert(false,'Bad map method!');
     end
+       
     save TEMP;
 else
     load TEMP;
 end
 
+% Grade new map
 figure;
 imagesc(map);
+origHist = hist(textons.map(:),1:textonClassAmount)
+newHist = hist(map(:),1:textonClassAmount)
+pause(1);
+
+clf;
+subplot(2,4,6), imagesc(map);
+title('Synthesized texton map');
+axis image
 
 if false
     tileSize = 40;
@@ -68,8 +79,11 @@ while isAddingTextons
 
     % Select current texton
     weights = (addLimit-addCounter).*(sizes.*(sizes<=(desiredPixels-pixelsAdded)));
-    index = weightedSelect(weights);
+    index = weightedSelect((weights./sum(weights)).^0.5,true);
 
+    subplot(2,4,2), subimage(uint8(canvas));
+    title('Synthesized image');
+    
     if isempty(index)
         if isLastEffort
             disp('Trying last effort!');
@@ -101,12 +115,22 @@ while isAddingTextons
 
     % Add selected texton
     addCounter(index) = addCounter(index)+1;
-
+    assert(addCounter(index)<=addLimit(index),'Added more textons than allowed!');
+    
     % Load texton data
     texton = double(textons.classes{textonClass}(textonIter).image);
     mask = textons.classes{textonClass}(textonIter).mask;
     box = textons.classes{textonClass}(textonIter).box;
+    textonArea = textons.map(box(1):box(3),box(2):box(4));
+    
+    subplot(2,4,1), subimage(uint8(texton));
+    title('Current Texton');    
+    axis image;
 
+    subplot(2,4,5), imagesc(textonArea);
+    title('Current Texton area');    
+    axis image;   
+    
     % Find place to place texton
     switch(config.method)
         case 'tile'
@@ -121,7 +145,7 @@ while isAddingTextons
             B = (0.1+0.5*exp(-0.1*bwdist(~classMask{textonClass}))).*classMask{textonClass};
             A = sad(B.*(~canvasMask),mask);
             
-            if true
+            if false
                 [maxValue,maxInd] = sort(A(:));
                 p = maxValue/sum(maxValue);
                 p2 = cumsum(p);
@@ -145,9 +169,22 @@ while isAddingTextons
             collisions = 1-sad((classMask{textonClass}.*(~canvasMask)),mask)/sum(mask(:));
             %collisions = 1-sad(~canvasMask,mask)/sum(mask(:));
 
+            B = (exp(-distances)-0.5).*surveySizes;
             % Combine scores
+            %A = (exp(-distances)-0.5).*surveySizes - collisions;
+            A = B;
+            
+            subplot(2,4,3), imagesc(distances);
+            axis image
+            title('Score: Distance');
 
-            A = (exp(-distances)-0.5).*surveySizes - collisions;
+            subplot(2,4,7), imagesc(collisions);
+            axis image
+            title('Score: Collisions');
+                        
+            subplot(2,4,8), imagesc(A);
+            axis image
+            title('Score: Final');
 
             if false
                 [maxValue,maxInd] = sort(A(:));
@@ -184,14 +221,13 @@ while isAddingTextons
             end
         end
     end
-
-    drawnow;
-    imshow(uint8(canvas));
-    %imshow(canvas);
-
+    
     if pixelsAdded >= desiredPixels
         isAddingTextons = false;
     end
+    
+    drawnow;
+    pause;
 end
 
 textonImg = uint8(canvas);
@@ -263,3 +299,33 @@ for k=1:size(X,3),
 end;
 
 surveySizes = filter2(Bm, Am, 'valid')./sum(Bm(:));
+
+
+function index = weightedSelect(weights,isMax)
+
+if nargin < 2
+    isMax = false;
+end
+
+A = weights/sum(weights);
+[maxValue,maxInd] = sort(A(:));
+   
+total = sum(maxValue);
+if ~(total > 0)
+    index = [];
+    return;
+end
+
+p = maxValue/sum(maxValue);
+p2 = cumsum(p);
+if isMax
+    rank = length(p2);
+    if isempty(rank)
+        keyboard;
+    end
+else
+    rank = find(p2>rand,1,'first');
+end
+index = maxInd(rank);
+
+fprintf('wighted select - rank #%d/%d\n',length(p2)-rank+1,length(p2));
