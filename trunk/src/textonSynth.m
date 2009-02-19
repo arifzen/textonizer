@@ -10,7 +10,7 @@ end
 
 function selfTest()
 
-imageName = 'eggs.png';
+imageName = 'flowers.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
@@ -21,6 +21,6 @@ newSize = newSize(1:2);
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
-config.synthesizer.method = 'stich';
+config.synthesizer.method = 'map';
 config.synthesizer.map.method = 'quilt';
 newImg = textonSynth(img, config, true);

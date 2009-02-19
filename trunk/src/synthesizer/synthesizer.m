@@ -1,5 +1,7 @@
 function [newImg] = synthesizer(origImg, textons, config, cache)
 
+% Init
+verbose = 1;
 origSize = size(origImg);
 newSize =config.newSize;
 scale = prod(newSize)/prod(origSize(1:2));
@@ -10,25 +12,19 @@ map = textons.map;
 textonClassAmount = length(textons.classes);
 
 % Transform texton map
-%keyboard;
 
-if true
-    switch config.map.method;
-        case 'tile'
-        case 'quilt'
-            tileSize = 40;
-            Y = imagequilt(map, tileSize, ceil(max(newSize)/(tileSize-round(tileSize / 6))));
-            map = Y(1:newSize(1),1:newSize(2),1);
-        otherwise
-            assert(false,'Bad map method!');
-    end
-       
-    save TEMP;
-else
-    load TEMP;
+switch config.map.method;
+    case 'tile'
+    case 'quilt'
+        tileSize = 40;
+        Y = imagequilt(map, tileSize, ceil(max(newSize)/(tileSize-round(tileSize / 6))));
+        map = Y(1:newSize(1),1:newSize(2),1);
+    otherwise
+        assert(false,'Bad map method!');
 end
 
 % Grade new map
+
 figure;
 imagesc(map);
 origHist = hist(textons.map(:),1:textonClassAmount)
@@ -40,15 +36,7 @@ subplot(2,4,6), imagesc(map);
 title('Synthesized texton map');
 axis image
 
-if false
-    tileSize = 40;
-    Y = imagequilt(origImg, tileSize, ceil(max(newSize)/(tileSize-round(tileSize / 6))));
-    Y = uint8(Y);
-    newImg = Y(1:newSize(1),1:newSize(2),1:3);
-    newImg = uint8(newImg);
-    imshow(newImg);
-    pause;
-end
+% Preprocessing
 
 counter = 0;
 sizes = [];
@@ -63,6 +51,8 @@ for textonClass = 1:length(textons.classes)
     classMask{textonClass} = logical(map == textonClass);
 end
 
+% Add textons to the canvas until decided
+
 textonAmount = counter;
 textonPixelAmount = sum(sizes);
 desiredPixels = round(scale*textonPixelAmount);
@@ -74,15 +64,11 @@ addLimit = ones(1,textonAmount)*1;
 
 isLastEffort = false;
 
-% Add textons to the canvas until decided
 while isAddingTextons
 
-    % Select current texton
+    % Select current texton    
     weights = (addLimit-addCounter).*(sizes.*(sizes<=(desiredPixels-pixelsAdded)));
     index = weightedSelect((weights./sum(weights)).^0.5,true);
-
-    subplot(2,4,2), subimage(uint8(canvas));
-    title('Synthesized image');
     
     if isempty(index)
         if isLastEffort
@@ -122,87 +108,57 @@ while isAddingTextons
     mask = textons.classes{textonClass}(textonIter).mask;
     box = textons.classes{textonClass}(textonIter).box;
     textonArea = textons.map(box(1):box(3),box(2):box(4));
-    
-    subplot(2,4,1), subimage(uint8(texton));
-    title('Current Texton');    
-    axis image;
+        
+    % Get texton frame
+    frame = double(origImg(box(1):box(3),box(2):box(4),:));
 
-    subplot(2,4,5), imagesc(textonArea);
-    title('Current Texton area');    
-    axis image;   
-    
+    % Get texton border
+    border = frame.*repmat(~mask,[1,1,3]);
+                   
     % Find place to place texton
     switch(config.method)
+        case 'default'          
+            
+            % Calculate energies            
+            Etexton = textonMapEnergy(map, textonArea, textonClassAmount);
+            Edistance = distanceEnergy(canvasMask, templateMask, textonChannel);
+            Earea = areaEnergy(canvas, area, ~mask);
+            
         case 'tile'
             leftPoint = box(1:2);
-        case 'sparse'
-
-            %A = sad(~canvasMask,mask);
-            %A = A.*classMask(1:size(A,1),1:size(A,2));
-
-            %A = sad((classMask{textonClass}.*(~canvasMask)),mask);
-
-            B = (0.1+0.5*exp(-0.1*bwdist(~classMask{textonClass}))).*classMask{textonClass};
-            A = sad(B.*(~canvasMask),mask);
+        case 'map'
             
-            if false
-                [maxValue,maxInd] = sort(A(:));
-                p = maxValue/sum(maxValue);
-                p2 = cumsum(p);
-                maxInd2 = maxInd(find(p2>rand,1,'first'));
-            else
-                [maxValue,maxInd2] = max(A(:));
-            end
-            [point(1),point(2)] = ind2sub(size(A),maxInd2);
-            leftPoint = point;
-        case 'stich'
-
-            % Get texton frame
-            frame = double(origImg(box(1):box(3),box(2):box(4),:));
-
-            % Get texton border
-            border = frame.*repmat(~mask,[1,1,3]);
-
-            % Calc maps
-            [distances, surveySizes] = ssdMask(canvas,border,canvasMask,~mask);
-
-            collisions = 1-sad((classMask{textonClass}.*(~canvasMask)),mask)/sum(mask(:));
-            %collisions = 1-sad(~canvasMask,mask)/sum(mask(:));
-
-            B = (exp(-distances)-0.5).*surveySizes;
-            % Combine scores
-            %A = (exp(-distances)-0.5).*surveySizes - collisions;
-            A = B;
+            [maxValue,maxInd2] = max(A(:));
             
-            subplot(2,4,3), imagesc(distances);
+            subplot(2,4,3), imagesc(A);
             axis image
-            title('Score: Distance');
-
-            subplot(2,4,7), imagesc(collisions);
-            axis image
-            title('Score: Collisions');
-                        
-            subplot(2,4,8), imagesc(A);
-            axis image
-            title('Score: Final');
-
-            if false
-                [maxValue,maxInd] = sort(A(:));
-                p = maxValue/sum(maxValue);
-                p2 = cumsum(p);
-                maxInd2 = maxInd(find(p2>rand,1,'first'));
-            else
-                [maxValue,maxInd2] = max(A(:));
-            end
+            title('Score: Map Match');
+            
             [point(1),point(2)] = ind2sub(size(A),maxInd2);
-            leftPoint = point;
+            leftPoint = point;            
+            
+            
+        case 'stich'            
 
         otherwise
             assert(false,'Bad method!');
     end
-
+    
+    % Select candidate
+    if false
+        [maxValue,maxInd] = sort(E(:));
+        p = maxValue/sum(maxValue);
+        p2 = cumsum(p);
+        maxInd2 = maxInd(find(p2>rand,1,'first'));
+    else
+        [maxValue,maxInd2] = max(E(:));
+    end
+    
+    [point(1),point(2)] = ind2sub(size(A),maxInd2);
+    leftPoint = point;    
+    
     % Draw texton to image
-
+    
     for r =1:size(mask,1)
         for c = 1:size(mask,2)
             target = leftPoint+[r-1,c-1];
@@ -225,6 +181,29 @@ while isAddingTextons
     if pixelsAdded >= desiredPixels
         isAddingTextons = false;
     end
+    
+    subplot(2,4,2), subimage(uint8(canvas));
+    title('Synthesized image');    
+    
+    subplot(2,4,1), subimage(uint8(texton));
+    title('Current Texton');    
+    axis image;
+
+    subplot(2,4,5), imagesc(textonArea);
+    title('Current Texton area');    
+    axis image;    
+    
+            subplot(2,4,3), imagesc(distances);
+            axis image
+            title('Score: Distance');
+
+            subplot(2,4,7), imagesc(collisions);
+            axis image
+            title('Score: Collisions');
+                        
+            subplot(2,4,8), imagesc(A);
+            axis image
+            title('Score: Final');
     
     drawnow;
     pause;
@@ -260,72 +239,6 @@ subplot(2,3,6), imagesc(map);
 title('Synthesized texton map');
 axis image
 
-function Z = sad(X, Y)
-
-for k=1:size(X,3),
-    A = X(:,:,k);
-    B = Y(:,:,k);
-
-    ab = filter2(B, A, 'valid');
-
-    if( k == 1 )
-        Z = ab;
-    else
-        Z = Z + ab;
-    end;
-end;
-
-function [Z,surveySizes] = ssdMask(X, Y, Am, Bm)
-% Perform SSD with respect to alpha values
-
-K = ones(size(Y,1), size(Y,2));
-
-for k=1:size(X,3),
-    A = X(:,:,k);
-    B = Y(:,:,k);
-
-    a2 = filter2(K, A.^2, 'valid');
-    b2 = sum(sum(B.^2));
-    ab = filter2(B, A, 'valid').*2;
-
-    b2am = filter2(B.^2, ~Am, 'valid');
-    a2bm = filter2(~Bm, A.^2, 'valid');
-
-    if( k == 1 )
-        Z = (a2 - ab + b2 -b2am -a2bm);
-    else
-        Z = Z + (a2 - ab + b2 -b2am -a2bm);
-    end;
-end;
-
-surveySizes = filter2(Bm, Am, 'valid')./sum(Bm(:));
 
 
-function index = weightedSelect(weights,isMax)
 
-if nargin < 2
-    isMax = false;
-end
-
-A = weights/sum(weights);
-[maxValue,maxInd] = sort(A(:));
-   
-total = sum(maxValue);
-if ~(total > 0)
-    index = [];
-    return;
-end
-
-p = maxValue/sum(maxValue);
-p2 = cumsum(p);
-if isMax
-    rank = length(p2);
-    if isempty(rank)
-        keyboard;
-    end
-else
-    rank = find(p2>rand,1,'first');
-end
-index = maxInd(rank);
-
-fprintf('wighted select - rank #%d/%d\n',length(p2)-rank+1,length(p2));
