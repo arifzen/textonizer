@@ -6,11 +6,11 @@ if nargin < 3
 end
 
 [textons] = textonizer(img, config.textonizer, cache);
-[newImg] = synthesizer(img, textons, config.synthesizer, cache);
+[newImg] = synthesizer(img, textons, config.synthesizer);
 
 function selfTest()
 
-imageName = 'flowers.PNG';
+imageName = 'fabric.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
