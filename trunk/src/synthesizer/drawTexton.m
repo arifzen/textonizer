@@ -9,7 +9,8 @@ for r =1:size(textonMask,1)
             isBit = textonMask(r,c);
             if isBit
                 if canvasMask(target(1),target(2))
-                    canvas(target(1),target(2),:) = (canvas(target(1),target(2),:)+textonImage(r,c,:))/2;
+                    %canvas(target(1),target(2),:) = (canvas(target(1),target(2),:)+textonImage(r,c,:))/2;
+                    canvas(target(1),target(2),:) = canvas(target(1),target(2),:);
                 else
                     canvasMask(target(1),target(2)) = 1;
                     canvas(target(1),target(2),:) = textonImage(r,c,:);

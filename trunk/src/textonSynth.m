@@ -10,7 +10,7 @@ end
 
 function selfTest()
 
-imageName = 'fabric.PNG';
+imageName = 'stones.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
