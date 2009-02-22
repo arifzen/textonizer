@@ -102,7 +102,7 @@ for scale = scales
 
     if ~isempty(newImg)
         crudeImg = imresize(double(newImg),newSize,'method','bicubic');
-        %verbose = 2;        
+        verbose = 2;        
     else
         crudeImg = [];
     end
@@ -113,13 +113,22 @@ for scale = scales
     addCounter = zeros(1,textonAmount);
     addLimit = ones(1,textonAmount)*1;
     isAddingTextons = true;    
+    currentClass = 1;
     
     while isAddingTextons
 
         % Select candidate texton
         weights = (addLimit-addCounter).*(sizes);
-        index = weightedSelect(weights,true);
-
+        weights2 = weights.*(classIndices==currentClass);
+        index = weightedSelect(weights2,true);
+    
+        if currentClass~=textonClassAmount
+            currentClass = currentClass+1;
+        else
+            currentClass = 1;
+        end
+        
+        
         % Halt if no candidate left
         if isempty(index) || weights(index)==0
             isAddingTextons = false;
@@ -148,13 +157,14 @@ for scale = scales
         
         % Calculate energies
         if ~isempty(crudeImg)
-            Ecrude = crudeEnergy(textonFrame, crudeImg);
+            %Ecrude = crudeEnergy(textonFrame, crudeImg);
             Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
-            Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
-            Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
-            
+            %Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
+            %Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
+            Ecrude = 1-ssd2(crudeImg, textonImage, textonMask);
             % Combine energies
-            E = (0.5*Earea + 0.75*Etexton + 0.25*Ecrude).*(Edistance.^2);
+            %E = (0.5*Earea + 0.75*Etexton + 0.25*Ecrude).*(Edistance.^2);
+            E = (1*Ecrude).*(Edistance.^2);
         else
             Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
             Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
