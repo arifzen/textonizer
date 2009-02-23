@@ -10,7 +10,7 @@ scales = [0.25,0.5,1];
 %scales = [1];
 
 actualScale.origImg = origImg;
-actualScale.origSize = size(origImg);
+actualScale.origSize = [size(origImg,1),size(origImg,2)];
 actualScale.newSize = config.newSize;
 actualScale.textonMap = textons.map;
 
@@ -20,6 +20,7 @@ for textonClass = 1:length(textons.classes)
 end
 textonAmount = counter;
 
+actualScale.refMap = zeros(actualScale.origSize);
 sizes = nan(1,textonAmount);
 classIndices = nan(1,textonAmount);
 textonIndices = nan(1,textonAmount);
@@ -30,14 +31,24 @@ for textonClass = 1:length(textons.classes)
         classIndices(counter) = textonClass;
         textonIndices(counter) = textonIter;
         sizes(counter) = sum(textons.classes{textonClass}(textonIter).mask(:));
+        
+        A = [];
+        M = textons.classes{textonClass}(textonIter).mask;
+        [A(:,1),A(:,2)] = ind2sub(size(M),find(M));
+        B = textons.classes{textonClass}(textonIter).box;
+        C = A+repmat(B(1:2)-[1,1],size(A,1),1);
+        I = sub2ind(size(actualScale.refMap),C(:,1),C(:,2));
+        actualScale.refMap(I) = counter;
     end
 end
+clear A B C I;
 
 %
 % New Texton Map
 %
-actualScale.newTextonMap = synthTextonMap(actualScale.textonMap, ...
-    actualScale.newSize, config.map);
+[actualScale.newTextonMap, actualScale.newRefMap] = ...
+    synthTextonMap(actualScale.textonMap, actualScale.newSize, ...
+    config.map, actualScale.refMap);
 
 if verbose
     clf;
@@ -51,6 +62,8 @@ for scale = scales
     % Convert data to current scale
     newSize = round(actualScale.newSize*scale);
     newTextonMap = imresize(actualScale.newTextonMap, newSize, ...
+        'method', 'nearest');
+    newRefMap = imresize(actualScale.newRefMap, newSize, ...
         'method', 'nearest');
     origImg = imresize(actualScale.origImg, newSize, ...
         'method', 'bicubic');
@@ -102,7 +115,7 @@ for scale = scales
 
     if ~isempty(newImg)
         crudeImg = imresize(double(newImg),newSize,'method','bicubic');
-        verbose = 2;        
+        %verbose = 2;        
     else
         crudeImg = [];
     end
@@ -127,8 +140,7 @@ for scale = scales
         else
             currentClass = 1;
         end
-        
-        
+                
         % Halt if no candidate left
         if isempty(index) || weights(index)==0
             isAddingTextons = false;
@@ -157,22 +169,24 @@ for scale = scales
         
         % Calculate energies
         if ~isempty(crudeImg)
-            %Ecrude = crudeEnergy(textonFrame, crudeImg);
+            Ecrude = crudeEnergy(textonFrame, crudeImg);
             Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
-            %Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
-            %Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
-            Ecrude = 1-ssd2(crudeImg, textonImage, textonMask);
+            Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
+            Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
+            %Ecrude = 1-ssd2(crudeImg, textonImage, textonMask);
             % Combine energies
-            %E = (0.5*Earea + 0.75*Etexton + 0.25*Ecrude).*(Edistance.^2);
-            E = (1*Ecrude).*(Edistance.^2);
+            E = (0.5*Earea + 0.75*Etexton + 0.25*Ecrude).*(Edistance.^2);
+            %E = (1*Ecrude).*(Edistance.^2);
         else
             Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
             Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
             Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
-
+            Eref = newRefMap==index;
+            Eref = Eref(1:(end-size(textonMask,1)+1),1:(end-size(textonMask,2)+1));
+            
             % Combine energies
             %E = Etexton + Edistance + Earea;
-            E = (1*Earea+1*Etexton).*(Edistance.^2);
+            E = (1*Earea+1*Etexton+1*Eref).*(Edistance.^2);
         end
 
         % Decide on suitable location
@@ -214,6 +228,12 @@ for scale = scales
             title('Energy: Texton');
 
             subplot(3,4,8), imagesc(E);
+            axis image
+            set(gca,'Xlim',[0.5,newSize(2)+0.5])
+            set(gca,'Ylim',[0.5,newSize(1)+0.5])
+            title('Energy: Reference');
+            
+            subplot(3,4,12), imagesc(E);
             axis image
             set(gca,'Xlim',[0.5,newSize(2)+0.5])
             set(gca,'Ylim',[0.5,newSize(1)+0.5])

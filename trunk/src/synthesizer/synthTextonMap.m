@@ -1,14 +1,15 @@
-function newTextonMap = synthTextonMap(textonMap, newSize, config)
+function [newTextonMap, newRefMap] = synthTextonMap(textonMap, newSize, config, refMap)
 % Synthesizes a new texton map
 
 textonClassAmount = length(unique(textonMap(:)));
 switch config.method;
     case 'tile'
         newTextonMap = textonMap;
+        newRefMap = refMap;
     case 'quilt'
         tileSize = 40;
-        Y = imagequilt(textonMap, tileSize, ceil(max(newSize)/(tileSize-round(tileSize / 6))));
-        newTextonMap = Y(1:newSize(1),1:newSize(2),1);
+        [newTextonMap, newRefMap] = ...
+            mapquilt(textonMap, refMap, newSize, tileSize);        
     otherwise
         assert(false,'Bad map method!');
 end

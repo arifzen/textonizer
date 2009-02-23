@@ -22,5 +22,5 @@ newSize = newSize(1:2);
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
 config.synthesizer.method = 'map';
-config.synthesizer.map.method = 'tile';
+config.synthesizer.map.method = 'quilt';
 newImg = textonSynth(img, config, true);
