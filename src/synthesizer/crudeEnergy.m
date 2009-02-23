@@ -1,7 +1,8 @@
 function E = crudeEnergy(textonFrame, crudeImg)
 
 if true
-    E = ssd(crudeImg, textonFrame)/3;
+    %E = exp(-ssd(crudeImg, textonFrame)/3/10);
+    E = ssd3(crudeImg, textonFrame);
 else
     for k = 1:size(crudeImg,3)
         A = normxcorr2(textonFrame(:,:,3), crudeImg(:,:,3));
