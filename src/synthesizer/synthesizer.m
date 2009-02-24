@@ -7,7 +7,8 @@ newImg = [];
 verbose = 1;
 textonClassAmount = length(textons.classes);
 scales = [0.25,0.5,1];
-%scales = [1];
+scales = [1];
+maxCandidateAmount = 2;
 
 actualScale.origImg = origImg;
 actualScale.origSize = [size(origImg,1),size(origImg,2)];
@@ -30,7 +31,7 @@ for textonClass = 1:length(textons.classes)
         counter = counter + 1;
         classIndices(counter) = textonClass;
         textonIndices(counter) = textonIter;
-        sizes(counter) = sum(textons.classes{textonClass}(textonIter).mask(:));
+        actualScale.sizes(counter) = sum(textons.classes{textonClass}(textonIter).mask(:));
         
         A = [];
         M = textons.classes{textonClass}(textonIter).mask;
@@ -58,16 +59,20 @@ if verbose
 end
 
 for scale = scales
-
+    
     % Convert data to current scale
     newSize = round(actualScale.newSize*scale);
+    origSize = round(actualScale.origSize*scale);
     newTextonMap = imresize(actualScale.newTextonMap, newSize, ...
         'method', 'nearest');
     newRefMap = imresize(actualScale.newRefMap, newSize, ...
         'method', 'nearest');
-    origImg = imresize(actualScale.origImg, newSize, ...
+    
+    refMap = imresize(actualScale.refMap, origSize, ...
+        'method', 'nearest');
+    origImg = imresize(actualScale.origImg, origSize, ...
         'method', 'bicubic');
-
+    
     %
     % Preprocessing
     %
@@ -78,26 +83,26 @@ for scale = scales
     textonMasks = cell(textonAmount,1);
     textonMapAreas = cell(textonAmount,1);
     textonAreas = cell(textonAmount,1);
-
+    
     for textonClass = 1:length(textons.classes)
         for textonIter = 1:length(textons.classes{textonClass})
             counter = counter + 1;
-
+            
             % Get texton image
             temp = double(textons.classes{textonClass}(textonIter).image);
             textonImages{counter} = imresize(temp,scale,'method','bicubic');
-
+            
             % Get texton mask
             temp = textons.classes{textonClass}(textonIter).mask;
-            textonMasks{counter} = imresize(temp,scale,'method','bicubic');
-
+            textonMasks{counter} = imresize(temp,scale,'method','nearest');
+            
             % Get texton map area
             textonBox = textons.classes{textonClass}(textonIter).box;
             temp = actualScale.textonMap(...
                 textonBox(1):textonBox(3),...
                 textonBox(2):textonBox(4));
             textonMapAreas{counter} = imresize(temp,scale,'method','nearest');
-
+            
             % Get texton frame
             temp = double(actualScale.origImg(...
                 textonBox(1):textonBox(3),...
@@ -105,17 +110,23 @@ for scale = scales
             textonFrames{counter} = imresize(temp,scale,'method','bicubic');
             textonAreas{counter} = textonFrames{counter}.*...
                 repmat(~textonMasks{counter},[1,1,3]);
-
+            
+            sizes(counter) = sum(textonMasks{counter}(:));
         end
         classMask{textonClass} = logical(newTextonMap == textonClass);
     end
-
+    
+    textonMapHist = hist(newTextonMap(:),textonClassAmount);
     canvas = zeros([newSize 3]);
     canvasMask = logical(false(newSize));
-
+    
+    % See how many times each texton appears in the new reference
+    A = hist(newRefMap(:),0:textonAmount)./hist(refMap(:),0:textonAmount);
+    textonFrequencies = A(2:end);
+    
     if ~isempty(newImg)
         crudeImg = imresize(double(newImg),newSize,'method','bicubic');
-        %verbose = 2;        
+        %verbose = 2;
     else
         crudeImg = [];
     end
@@ -124,110 +135,162 @@ for scale = scales
     % Texton adding
     %
     addCounter = zeros(1,textonAmount);
-    addLimit = ones(1,textonAmount)*1;
-    isAddingTextons = true;    
-    currentClass = 1;
+    addLimit = round(textonFrequencies);
+    
+    isAddingTextons = true;
     
     while isAddingTextons
-
-        % Select candidate texton
-        weights = (addLimit-addCounter).*(sizes);
-        weights2 = weights.*(classIndices==currentClass);
-        index = weightedSelect(weights2,true);
-    
-        if currentClass~=textonClassAmount
-            currentClass = currentClass+1;
-        else
-            currentClass = 1;
-        end
-                
+        
+        %
+        % Find candidate textons
+        %
+        
+        % Find current texton hist
+        A = newTextonMap.*canvasMask;
+        B = hist(A(:),0:textonClassAmount);
+        currentTextonMapHist = B(2:end);
+        textonCompletionRatio = currentTextonMapHist./textonMapHist;
+        
         % Halt if no candidate left
-        if isempty(index) || weights(index)==0
+%         if all(textonCompletionRatio>0.9)
+%             isAddingTextons = false;
+%             continue;
+%         end                
+        
+        Eclass = nan(size(sizes));
+        for iter = 1:textonClassAmount
+            Eclass(classIndices==iter) = 1-textonCompletionRatio(iter);
+        end
+        clear J I A B;
+        
+        %Evar = addLimit-addCounter;
+        Evar = exp(-addCounter*10);
+        Esizes = sizes;
+        Efreq = max(addLimit-addCounter,0);
+        
+        E = Efreq.*Eclass.*Esizes.*Evar;
+        
+        if all(E==0)
             isAddingTextons = false;
             continue;
-        end
+        end     
+        
+        %index = weightedSelect(E,true);
+        
+        [J,I] = sort(E);       
+        J = J(end-maxCandidateAmount+1:end);
+        I = I(end-maxCandidateAmount+1:end);        
+        candidates = I(J~=0);
+        candidateAmount = length(candidates);
+        clear I J;
+        
+        candidatePeakEnergy = nan(candidateAmount,1);
+        candidatePeakLocation = nan(candidateAmount,2);
 
+        for candidateIter = 1:candidateAmount
+            
+            index = candidates(candidateIter);
+            
+            %
+            % Load candidate data
+            %
+            textonImage = textonImages{index};
+            textonFrame = textonFrames{index};
+            textonMask = textonMasks{index};
+            textonMapArea = textonMapAreas{index};
+            textonArea = textonAreas{index};
+            
+            %
+            % Find best locations
+            %
+            
+            % Calculate energies
+            if ~isempty(crudeImg)
+                
+                Ecrude = crudeEnergy(textonFrame, crudeImg);
+                Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
+                Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
+                Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
+                Eref = refMapEnergy(newRefMap, index, textonMask);
+                
+                % Combine energies
+                E = (0.5*Earea + 0.75*Etexton + 0.25*Ecrude+ 1*Eref).*(Edistance.^2);
+                %E = (1*Ecrude).*(Edistance.^2);
+            else
+                Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
+                Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
+                Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
+                Eref = refMapEnergy(newRefMap, index, textonMask);
+                
+                % Combine energies
+                %E = Etexton + Edistance + Earea;
+                E = (0.5*Earea + 0.75*Etexton + 2*Eref).*(Edistance);
+            end
+            
+            % Decide on suitable location
+            [maxValue,maxInd2] = max(E(:));
+            [drawPoint(1),drawPoint(2)] = ind2sub(size(E),maxInd2);
+            
+            candidatePeakEnergy(candidateIter) = maxValue;
+            candidatePeakLocation(candidateIter,:) = drawPoint;
+        end
+        
+        %
+        % Select best candidate
+        %
+        [J,I] = max(candidatePeakEnergy);
+        index = candidates(I);
+        drawPoint = candidatePeakLocation(I,:);
+        
+        textonImage = textonImages{index};
+        textonMask = textonMasks{index};
+        textonMapArea = textonMapAreas{index};
+
+        fprintf('Selected candidate #%d with error %g\n',I,J);
+        clear I J;
+        
         %
         % Register candidate
         %
         textonClass = classIndices(index);
         addCounter(index) = addCounter(index)+1;
         assert(addCounter(index)<=addLimit(index),'Added more textons than allowed!');
-
-        %
-        % Load candidate data
-        %
-        textonImage = textonImages{index};
-        textonFrame = textonFrames{index};
-        textonMask = textonMasks{index};
-        textonMapArea = textonMapAreas{index};
-        textonArea = textonAreas{index};
-
-        %
-        % Find location
-        %
-        
-        % Calculate energies
-        if ~isempty(crudeImg)
-            Ecrude = crudeEnergy(textonFrame, crudeImg);
-            Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
-            Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
-            Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
-            %Ecrude = 1-ssd2(crudeImg, textonImage, textonMask);
-            % Combine energies
-            E = (0.5*Earea + 0.75*Etexton + 0.25*Ecrude).*(Edistance.^2);
-            %E = (1*Ecrude).*(Edistance.^2);
-        else
-            Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
-            Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
-            Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
-            Eref = newRefMap==index;
-            Eref = Eref(1:(end-size(textonMask,1)+1),1:(end-size(textonMask,2)+1));
-            
-            % Combine energies
-            %E = Etexton + Edistance + Earea;
-            E = (1*Earea+1*Etexton+1*Eref).*(Edistance.^2);
-        end
-
-        % Decide on suitable location
-        [maxValue,maxInd2] = max(E(:));
-        [drawPoint(1),drawPoint(2)] = ind2sub(size(E),maxInd2);
-
+                
         % Draw texton to image
         [canvas, canvasMask] = drawTexton(canvas, canvasMask, ...
             drawPoint, textonImage, textonMask);
-
+        
         if verbose
             subplot(3,4,2), subimage(uint8(canvas));
             title('Synthesized image');
-
+            
             subplot(3,4,1), subimage(uint8(textonImage));
             title('Current Texton');
             axis image;
-
+            
             subplot(3,4,5), imagesc(textonMapArea);
             title('Current Texton area');
             axis image;
-
+            
             subplot(3,4,3), imagesc(Edistance);
             axis image
             set(gca,'Xlim',[0.5,newSize(2)+0.5])
             set(gca,'Ylim',[0.5,newSize(1)+0.5])
             title('Energy: Distance');
-
+            
             subplot(3,4,7), imagesc(Earea);
             axis image
             set(gca,'Xlim',[0.5,newSize(2)+0.5])
             set(gca,'Ylim',[0.5,newSize(1)+0.5])
             title('Energy: Area');
-
+            
             subplot(3,4,4), imagesc(Etexton);
             axis image
             set(gca,'Xlim',[0.5,newSize(2)+0.5])
             set(gca,'Ylim',[0.5,newSize(1)+0.5])
             title('Energy: Texton');
-
-            subplot(3,4,8), imagesc(E);
+            
+            subplot(3,4,8), imagesc(Eref);
             axis image
             set(gca,'Xlim',[0.5,newSize(2)+0.5])
             set(gca,'Ylim',[0.5,newSize(1)+0.5])
@@ -238,11 +301,11 @@ for scale = scales
             set(gca,'Xlim',[0.5,newSize(2)+0.5])
             set(gca,'Ylim',[0.5,newSize(1)+0.5])
             title('Energy: Final');
-
+            
             if ~isempty(crudeImg)
                 subplot(3,4,9), subimage(uint8(crudeImg));
                 title('Crude Image');
-
+                
                 subplot(3,4,11), imagesc(Ecrude);
                 axis image
                 set(gca,'Xlim',[0.5,newSize(2)+0.5])
@@ -257,15 +320,15 @@ for scale = scales
         end
     end
     textonImg = uint8(canvas);
-
+    
     %
     % Image completion
     %
     if ~all(canvasMask(:))
-        canvas = completePoisson(canvas);        
+        canvas = completePoisson(canvas);
     end
-	poissonImg = uint8(canvas);
-
+    poissonImg = uint8(canvas);
+    
     newImg = uint8(canvas);
 end
 

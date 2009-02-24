@@ -10,14 +10,14 @@ end
 
 function selfTest()
 
-imageName = 'flowers.PNG';
+imageName = 'stones.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
 
 img = loadImage(imageName);
 newSize = size(img);
-newSize = newSize(1:2);
+newSize = newSize(1:2)*2;
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
