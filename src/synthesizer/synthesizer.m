@@ -1,10 +1,14 @@
-function newImg = synthesizer(origImg, textons, config)
+function [newImg, newTextonMap, textonImg, poissonImg] = synthesizer(origImg, textons, config)
 
 %
 % Init
 %
 newImg = [];
-verbose = 1;
+if isfield(config,'verbose')
+    verbose = config.verbose;
+else
+    verbose = 0;
+end
 textonClassAmount = length(textons.classes);
 scales = config.scales;
 maxCandidateAmount = config.candidates_max;
@@ -125,8 +129,11 @@ for scale = scales
     canvasMask = logical(false(newSize));
     
     % See how many times each texton appears in the new reference
-    A = hist(newRefMap(:),0:textonAmount)./hist(refMap(:),0:textonAmount);
+    B = hist(refMap(:),0:textonAmount);
+    B(B == 0) = 1; % <- This might happen due to scaling issues.
+    A = hist(newRefMap(:),0:textonAmount)./B;
     textonFrequencies = A(2:end);
+    clear A B;
     
     if ~isempty(newImg)
         crudeImg = imresize(double(newImg),newSize,'method','bicubic');
@@ -156,10 +163,10 @@ for scale = scales
         textonCompletionRatio = currentTextonMapHist./textonMapHist;
         
         % Halt if no candidate left
-%         if all(textonCompletionRatio>0.9)
-%             isAddingTextons = false;
-%             continue;
-%         end                
+        %         if all(textonCompletionRatio>0.9)
+        %             isAddingTextons = false;
+        %             continue;
+        %         end
         
         Eclass = nan(size(sizes));
         for iter = 1:textonClassAmount
@@ -172,25 +179,26 @@ for scale = scales
         Esizes = sizes;
         Efreq = max(addLimit-addCounter,0);
         
-        E = Efreq.*Eclass.*Esizes.*Evar;
+        TE = Efreq.*Eclass.*Esizes.*Evar;
+        assert(all(TE>=0));
         
-        if all(E==0)
+        if all(TE==0)
             isAddingTextons = false;
             continue;
-        end     
+        end
         
         %index = weightedSelect(E,true);
         
-        [J,I] = sort(E);       
+        [J,I] = sort(TE);
         J = J(end-maxCandidateAmount+1:end);
-        I = I(end-maxCandidateAmount+1:end);        
+        I = I(end-maxCandidateAmount+1:end);
         candidates = I(J~=0);
         candidateAmount = length(candidates);
         clear I J;
         
         candidatePeakEnergy = nan(candidateAmount,1);
         candidatePeakLocation = nan(candidateAmount,2);
-
+        
         for candidateIter = 1:candidateAmount
             
             index = candidates(candidateIter);
@@ -213,7 +221,7 @@ for scale = scales
             Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
             Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
             Eref = refMapEnergy(newRefMap, index, textonMask);
-            if isempty(crudeImg)                
+            if isempty(crudeImg)
                 Ecrude = 0;
             else
                 Ecrude = crudeEnergy(textonFrame, crudeImg);
@@ -241,8 +249,8 @@ for scale = scales
         textonImage = textonImages{index};
         textonMask = textonMasks{index};
         textonMapArea = textonMapAreas{index};
-
-        fprintf('Selected candidate #%d with energy %g\n',I,J);
+        
+        fprintf('Selected candidate #%d with energy %g - TE: %g\n',I,J,norm(TE));
         clear I J;
         
         %
@@ -251,7 +259,7 @@ for scale = scales
         textonClass = classIndices(index);
         addCounter(index) = addCounter(index)+1;
         assert(addCounter(index)<=addLimit(index),'Added more textons than allowed!');
-                
+        
         % Draw texton to image
         [canvas, canvasMask] = drawTexton(canvas, canvasMask, ...
             drawPoint, textonImage, textonMask);
@@ -333,6 +341,7 @@ end
 %
 canvas = quilt(canvas,canvasMask,origImg,40);
 newImg = uint8(canvas);
+
 
 clf;
 
