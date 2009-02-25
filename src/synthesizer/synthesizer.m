@@ -6,14 +6,18 @@ function newImg = synthesizer(origImg, textons, config)
 newImg = [];
 verbose = 1;
 textonClassAmount = length(textons.classes);
-scales = [0.25,0.5,1];
-scales = [1];
-maxCandidateAmount = 2;
+scales = config.scales;
+maxCandidateAmount = config.candidates_max;
 
 actualScale.origImg = origImg;
 actualScale.origSize = [size(origImg,1),size(origImg,2)];
 actualScale.newSize = config.newSize;
 actualScale.textonMap = textons.map;
+
+Warea = config.weights.area;
+Wtexton = config.weights.texton;
+Wcrude = config.weights.crude;
+Wref = config.weights.ref;
 
 counter = 0;
 for textonClass = 1:length(textons.classes)
@@ -205,27 +209,19 @@ for scale = scales
             %
             
             % Calculate energies
-            if ~isempty(crudeImg)
-                
-                Ecrude = crudeEnergy(textonFrame, crudeImg);
-                Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
-                Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
-                Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
-                Eref = refMapEnergy(newRefMap, index, textonMask);
-                
-                % Combine energies
-                E = (0.5*Earea + 0.75*Etexton + 0.25*Ecrude+ 1*Eref).*(Edistance.^2);
-                %E = (1*Ecrude).*(Edistance.^2);
+            Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
+            Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
+            Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
+            Eref = refMapEnergy(newRefMap, index, textonMask);
+            if isempty(crudeImg)                
+                Ecrude = 0;
             else
-                Etexton = textonMapEnergy(newTextonMap, textonMapArea, textonClassAmount);
-                Edistance = distanceEnergy(canvasMask, textonMask, classMask{textonClass});
-                Earea = areaEnergy(canvas, canvasMask, textonArea, ~textonMask);
-                Eref = refMapEnergy(newRefMap, index, textonMask);
-                
-                % Combine energies
-                %E = Etexton + Edistance + Earea;
-                E = (0.5*Earea + 0.75*Etexton + 2*Eref).*(Edistance);
+                Ecrude = crudeEnergy(textonFrame, crudeImg);
             end
+            
+            % Combine energies
+            E = (Warea*Earea + Wtexton*Etexton + ...
+                Wcrude*Ecrude + Wref*Eref).*(Edistance.^2);
             
             % Decide on suitable location
             [maxValue,maxInd2] = max(E(:));
@@ -246,7 +242,7 @@ for scale = scales
         textonMask = textonMasks{index};
         textonMapArea = textonMapAreas{index};
 
-        fprintf('Selected candidate #%d with error %g\n',I,J);
+        fprintf('Selected candidate #%d with energy %g\n',I,J);
         clear I J;
         
         %
