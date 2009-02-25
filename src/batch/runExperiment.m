@@ -40,7 +40,7 @@ parfor iter = 1:length(filenames)
     textonMontageFilename = fullfile(outputPath, [name,'_texton.png']);
     newImageFilename = fullfile(outputPath, [name,'_synth.png']);    
     
-    if(exist(resultFilename , 'file'))
+    if(exist(dataFilename, 'file'))
         continue;
     end       
     
