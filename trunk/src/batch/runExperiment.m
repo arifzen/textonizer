@@ -14,6 +14,10 @@ config = temp.config;
 outputPath = fullfile(getConst('EXP_RESULT_PATH'), experimentName);
 if ~exist(outputPath,'file')
     mkdir(outputPath);
+    mkdir(fullfile(outputPath,'data'));
+    mkdir(fullfile(outputPath,'textonizer'));
+    mkdir(fullfile(outputPath,'synthesizer'));
+    mkdir(fullfile(outputPath,'output'));
 end
 
 inputPath = getConst('INPUT_PATH');
@@ -30,17 +34,18 @@ end
 datas = cell(length(filenames),1);
 
 % Go over input images
-parfor iter = 1:length(filenames)
+for iter = 1:length(filenames)
     
     currentConfig = config;
     filename = filenames{iter};
     [pathstr, name] = fileparts(filename);
     
-    dataFilename = fullfile(outputPath, [name,'_data.mat']);
-    textonMontageFilename = fullfile(outputPath, [name,'_texton.png']);
-    newImageFilename = fullfile(outputPath, [name,'_synth.png']);    
+    dataFilename = fullfile(outputPath, 'data', name);
+    textonMontageFilename = fullfile(outputPath, 'textonizer', [name,'.png']);    
+    synthMontageFilename = fullfile(outputPath, 'synthesizer',[name,'.png']);
+    newImageFilename = fullfile(outputPath, 'output', [name,'.png']);
     
-    if(exist(dataFilename, 'file'))
+    if(exist(newImageFilename, 'file'))
         continue;
     end       
     
@@ -54,14 +59,19 @@ parfor iter = 1:length(filenames)
     showTextonPatches(textons,5);
     
     scaleFactor = 0.8;
-    set(gcf, 'PaperPosition', [0.25 2.5 scaleFactor*8 scaleFactor*6]);
-    
-    print('-painters','-dpng', textonMontageFilename);
+    set(gcf, 'PaperPosition', [0.25 2.5 scaleFactor*8 scaleFactor*6]);    
+    print('-painters','-dpng', synthMontageFilename);
     close(gcf);
        
     currentConfig.synthesizer.newSize = [size(img,1),size(img,2)].*currentConfig.batch.synth_scale;
     
-    [newImg] = synthesizer(img, textons, currentConfig.synthesizer);
+    [newImg, newTextonMap, textonImg, poissonImg] = ...
+        synthesizer(img, textons, currentConfig.synthesizer);
+
+    scaleFactor = 1;
+    set(gcf, 'PaperPosition', [0.25 2.5 scaleFactor*8 scaleFactor*6]);    
+    print('-painters','-dpng', textonMontageFilename);
+    close(gcf);
     
     imwrite(newImg,newImageFilename);
     
@@ -69,6 +79,10 @@ parfor iter = 1:length(filenames)
     data = [];    
     data.filename = dataFilename;
     data.textons = textons;
+    data.texton_map = newTextonMap;
+    data.texton_img = textonImg;
+    data.poisson_img = poissonImg;
+    
     [status,data.svn_info] = system('svn info');    
     
     datas{iter} = data;
@@ -76,5 +90,7 @@ end
 
 for iter = 1:length(filenames)
     data = datas{iter};
-    save(data.filename,'data');
+    if ~isempty(data)
+        save(data.filename,'data');
+    end
 end

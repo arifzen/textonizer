@@ -5,7 +5,7 @@ if ~nargin
     return;
 end
 
-simple = 1;
+simple = 0;
 
 if( nargin < 6 )
     err = 0.002;
@@ -83,51 +83,40 @@ for i=1:n,
             if( j > 1 )
                 
                 %Compute the SSD in the border region
-                E = ( X(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+overlap-1) - Y(startI:endI, startJ:startJ+overlap-1) ).^2;
+                E = (...
+                    X(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+overlap-1) - ...
+                    Y(startI:endI, startJ:startJ+overlap-1)) > 0;
                 
                 %Compute the mincut array
                 C = mincut(E, 0);
                 
                 %Compute the mask and write to the destination
                 M(1:end, 1:overlap) = double(C >= 0);
-                %Y(startI:endI, startJ:endJ, :) = filtered_write(Y(startI:endI, startJ:endJ, :), ...
-                %    X(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+tilesize-1, :), M);
-                
-                %Y(startI:endI, startJ:endJ, 1:3) = X(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+tilesize-1, 1:3);
-                
-                %Compute the mask and write to the destination
-                %                  M = zeros(tilesize, tilesize);
-                %                  M(1:end, 1:overlap) = double(C == 0);
-                %                  Y(startI:endI, startJ:endJ, :) = filtered_write(Y(startI:endI, startJ:endJ, :), ...
-                %                      repmat(255, [tilesize, tilesize, 3]), M);
-                
-            end;
+            end
             
             %We have a top overlap
             if( i > 1 )
                 %Compute the SSD in the border region
-                E = ( X(sub(1):sub(1)+overlap-1, sub(2):sub(2)+tilesize-1) - Y(startI:startI+overlap-1, startJ:endJ) ).^2;
+                E = (...
+                    X(sub(1):sub(1)+overlap-1, sub(2):sub(2)+tilesize-1) - ...
+                    Y(startI:startI+overlap-1, startJ:endJ)) > 0;
                 
                 %Compute the mincut array
                 C = mincut(E, 1);
                 
                 %Compute the mask and write to the destination
                 M(1:overlap, 1:end) = M(1:overlap, 1:end) .* double(C >= 0);
-                %Y(startI:endI, startJ:endJ, :) = filtered_write(Y(startI:endI, startJ:endJ, :), ...
-                %    X(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+tilesize-1, :), M);
-            end;
+            end
             
-            
-            if( i == 1 && j == 1 )
-                Y(startI:endI, startJ:endJ, :) = X(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+tilesize-1, :);
-            else
-                %Write to the destination using the mask
-                Y(startI:endI, startJ:endJ, :) = filtered_write(Y(startI:endI, startJ:endJ, :), ...
-                    X(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+tilesize-1, :), M);
-            end;
-            
-        end;
-        
+            %Write to the destination using the mask
+            Y(startI:endI, startJ:endJ, :) = ...
+                Y(startI:endI, startJ:endJ, :).*(~M) + ...
+                X(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+tilesize-1, :).*M;
+
+            newRefMap(startI:endI, startJ:endJ, :) = ...
+                newRefMap(startI:endI, startJ:endJ, :).*(~M) + ...
+                refMap(sub(1):sub(1)+tilesize-1, sub(2):sub(2)+tilesize-1, :).*M;            
+        end;        
         
         imagesc(Y);
         drawnow;
@@ -147,7 +136,7 @@ end;
 
 function selfTest()
 
-imageName = 'flowers.PNG';
+imageName = 'eggs.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
@@ -163,4 +152,8 @@ config.synthesizer.map.method = 'tile';
 
 textons = textonizer(img, config.textonizer, true);
 
-mapquilt(textons.map, newSize, 40);
+refMap = textons.map;
+tilesize = 50;
+[newTextonMap, newRefMap] = ...
+    mapquilt(textons.map, refMap, newSize, tilesize,round(tilesize / 20));
+
