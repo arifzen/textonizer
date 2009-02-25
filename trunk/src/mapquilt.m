@@ -5,7 +5,7 @@ if ~nargin
     return;
 end
 
-simple = 0;
+simple = 1;
 
 if( nargin < 6 )
     err = 0.002;
@@ -26,16 +26,52 @@ destsize = n * tilesize - (n-1) * overlap;
 Y = zeros(destsize, destsize, 1);
 newRefMap = zeros(destsize, destsize, 1);
 
+%
+% Calc histogram matrix
+%
+origH = nan([size(X,1)-tilesize+1, size(X,2)-tilesize+1, channels]);
+for iter = 1:channels
+    origH(:,:,iter) = filter2(ones(tilesize),X==iter,'valid');       
+end
+
+% Create dist map
+distMap = nan(size(Y)); 
+for i=1:size(distMap,1)
+    for j=1:size(distMap,2)
+        distMap(i,j) = X(1+floor(rand*numel(X)));
+    end
+end
+
+distMap = tileImage(X, size(Y));
+A = hist(distMap(:), 1:channels)./hist(X(:), 1:channels);
+
+
+newH = nan([size(Y,1)-tilesize+1, size(Y,2)-tilesize+1, channels]);
+for iter = 1:channels
+    newH(:,:,iter) = filter2(ones(tilesize),distMap==iter,'valid');       
+end
+
 for i=1:n,
     for j=1:n,
         startI = (i-1)*tilesize - (i-1) * overlap + 1;
         startJ = (j-1)*tilesize - (j-1) * overlap + 1;
         endI = startI + tilesize -1 ;
         endJ = startJ + tilesize -1;
+                
+        currentH = squeeze(newH(i,j,:));
+        for iter = 1:channels
+            A = ((origH(:,:,iter) - currentH(iter)).^2)./(origH(:,:,iter) + currentH(iter));
+            if iter == 1
+                Edist = A;
+            else
+                Edist = Edist + A;
+            end
+        end        
+        Edist = 0.5 * Edist;
         
         %Determine the distances from each tile to the overlap region
         %This will eventually be replaced with convolutions
-        distances = zeros( size(X,1)-tilesize, size(X,2)-tilesize );
+        distances = zeros( size(X,1)-tilesize+1, size(X,2)-tilesize+1);
         
         %Compute the distances from the source to the left overlap region
         if( j > 1 )
@@ -64,6 +100,11 @@ for i=1:n,
         %Find the best candidates for the match
         best = min(distances(:));
         candidates = find(distances(:) <= (1+err)*best);
+        
+        idx = candidates(ceil(rand(1)*length(candidates)));
+
+        best = max(Edist(:));
+        candidates = find(Edist(:) >= (1-err)*best);
         
         idx = candidates(ceil(rand(1)*length(candidates)));
         
@@ -136,14 +177,14 @@ end;
 
 function selfTest()
 
-imageName = 'eggs.PNG';
+imageName = 'stones.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
 
 img = loadImage(imageName);
 newSize = size(img);
-newSize = newSize(1:2)*2;
+newSize = newSize(1:2);
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
@@ -155,5 +196,5 @@ textons = textonizer(img, config.textonizer, true);
 refMap = textons.map;
 tilesize = 50;
 [newTextonMap, newRefMap] = ...
-    mapquilt(textons.map, refMap, newSize, tilesize,round(tilesize / 20));
+    mapquilt(textons.map, refMap, newSize, tilesize,round(tilesize / 6));
 
