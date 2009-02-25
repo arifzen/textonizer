@@ -1,4 +1,4 @@
-experimentName = 'batch-01';
+experimentName = 'batch-01-minor';
 
 %
 % Batch
@@ -22,6 +22,11 @@ config.batch.filenames = {...
     'stone.PNG',...
     'stones.PNG',...
     'wetsand.PNG'};
+
+config.batch.filenames = {...
+    'eggs.PNG',...
+    'flowers.PNG',...
+    'stones.PNG'};
 config.batch.synth_scale = [1 1];
 
 %
@@ -49,7 +54,14 @@ config.textonizer.semantic.fill_holes = false;
 config.synthesizer.newSize = [];
 config.synthesizer.method = 'map';
 config.synthesizer.map.method = 'quilt';
+config.synthesizer.scales = [0.5,1];
+config.synthesizer.candidates_max = 1;
 
+config.synthesizer.weights.area = 0.5;
+config.synthesizer.weights.texton = 0.25;
+config.synthesizer.weights.crude = 0.25;
+config.synthesizer.weights.ref = 1;
+                
 save(fullfile(getConst('EXP_CONFIG_PATH'), experimentName), 'config');
 
 
