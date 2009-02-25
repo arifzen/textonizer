@@ -36,7 +36,7 @@ parfor iter = 1:length(filenames)
     filename = filenames{iter};
     [pathstr, name] = fileparts(filename);
     
-    resultFilename = fullfile(outputPath, [name,'_data.mat']);
+    dataFilename = fullfile(outputPath, [name,'_data.mat']);
     textonMontageFilename = fullfile(outputPath, [name,'_texton.png']);
     newImageFilename = fullfile(outputPath, [name,'_synth.png']);    
     
