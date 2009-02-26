@@ -1,11 +1,11 @@
 function runExperiment(experimentName)
 
 % Setup batch pool
-if matlabpool('SIZE')   
-    matlabpool CLOSE;
-else
-    matlabpool OPEN 4;
-end
+% if matlabpool('SIZE')   
+%     matlabpool CLOSE;
+% else
+%     matlabpool OPEN 4;
+% end
 
 % Load config and make room for results
 temp = load(fullfile(getConst('EXP_CONFIG_PATH'), experimentName), 'config');
@@ -34,7 +34,7 @@ end
 datas = cell(length(filenames),1);
 
 % Go over input images
-for iter = 1:length(filenames)
+parfor iter = 1:length(filenames)
     
     currentConfig = config;
     filename = filenames{iter};
