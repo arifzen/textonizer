@@ -1,19 +1,39 @@
-function [Y, newRefMap] = mapquilt(X, refMap, newSize, tilesize, overlap, err)
+function [Y, newRefMap] = mapquilt(X, refMap, newSize, config)
 
 if ~nargin
     selfTest();
     return;
 end
-
-simple = 1;
-
-if( nargin < 6 )
-    err = 0.002;
+if ~isfield(config', 'error')
+    config.error = 0.002;
 end;
-if( nargin < 5 )
-    overlap = round(tilesize / 6);
+if ~isfield(config, 'titlesize')
+    config.tilesize = 40;
+end
+if ~isfield(config, 'overlap')
+    config.overlap = round(config.tilesize / 6);
 end;
-if( overlap >= tilesize )
+if ~isfield(config, 'simple')
+    config.simple = 0;
+end;
+if ~isfield(config, 'weights')
+    config.weights = [];
+end;
+if ~isfield(config.weights, 'spatial')
+    config.weights.spatial = 1;
+end;
+if ~isfield(config.weights, 'frequency')
+    config.weights.frequency = 1;
+end;
+
+overlap = config.overlap;
+tilesize = config.tilesize;
+err = config.error;
+simple = config.simple;
+Wspatial = config.weights.spatial;
+Wfrequency = config.weights.frequency;
+
+if(overlap >= tilesize )
     error('Overlap must be less than tilesize');
 end;
 
@@ -35,16 +55,15 @@ for iter = 1:channels
 end
 
 % Create dist map
-distMap = nan(size(Y)); 
-for i=1:size(distMap,1)
-    for j=1:size(distMap,2)
-        distMap(i,j) = X(1+floor(rand*numel(X)));
-    end
-end
+% distMap = nan(size(Y)); 
+% for i=1:size(distMap,1)
+%     for j=1:size(distMap,2)
+%         distMap(i,j) = X(1+floor(rand*numel(X)));
+%     end
+% end
 
 distMap = tileImage(X, size(Y));
 A = hist(distMap(:), 1:channels)./hist(X(:), 1:channels);
-
 
 newH = nan([size(Y,1)-tilesize+1, size(Y,2)-tilesize+1, channels]);
 for iter = 1:channels
@@ -58,16 +77,16 @@ for i=1:n,
         endI = startI + tilesize -1 ;
         endJ = startJ + tilesize -1;
                 
-        currentH = squeeze(newH(i,j,:));
+        currentH = squeeze(newH(startI,startJ,:));
         for iter = 1:channels
             A = ((origH(:,:,iter) - currentH(iter)).^2)./(origH(:,:,iter) + currentH(iter));
             if iter == 1
-                Edist = A;
+                freqDistances = A;
             else
-                Edist = Edist + A;
+                freqDistances = freqDistances + A;
             end
         end        
-        Edist = 0.5 * Edist;
+        freqDistances = 0.5 * freqDistances;
         
         %Determine the distances from each tile to the overlap region
         %This will eventually be replaced with convolutions
@@ -98,14 +117,19 @@ for i=1:n,
         end;
         
         %Find the best candidates for the match
-        best = min(distances(:));
-        candidates = find(distances(:) <= (1+err)*best);
+        %best = min(distances(:));       
+        %candidates = find(distances(:) <= (1+err)*best);        
+        %idx = candidates(ceil(rand(1)*length(candidates)));        
+        %best = min(freqDistances(:));
+        %candidates = find(freqDistances(:) <= (1+err)*best);        
+        %idx = candidates(ceil(rand(1)*length(candidates)));
         
-        idx = candidates(ceil(rand(1)*length(candidates)));
+        Espatial = (min(distances(:))+1)./(distances(:)+1);
+        Efrequency = (min(freqDistances(:))+1)./(freqDistances(:)+1);
+        E = Espatial*Wspatial + Efrequency*Wfrequency;
 
-        best = max(Edist(:));
-        candidates = find(Edist(:) >= (1-err)*best);
-        
+        best = max(E(:));
+        candidates = find(E(:) >= (1-err)*best);        
         idx = candidates(ceil(rand(1)*length(candidates)));
         
         [sub(1), sub(2)] = ind2sub(size(distances), idx);
@@ -164,8 +188,14 @@ for i=1:n,
     end;
 end;
 
-figure;
-imagesc(Y);
+%figure;
+%imagesc(Y);
+
+ratio = hist(Y(:),1:channels)./hist(X(:),1:channels);
+disp('Frequency ratio between input and output is:');
+disp(ratio)
+fprintf('std: %g\n',std(ratio));
+
 
 Y = Y(1:newSize(1),1:newSize(2),1);
 newRefMap = newRefMap(1:newSize(1),1:newSize(2),1);
@@ -177,14 +207,14 @@ end;
 
 function selfTest()
 
-imageName = 'stones.PNG';
+imageName = 'eggs.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
 
 img = loadImage(imageName);
 newSize = size(img);
-newSize = newSize(1:2);
+newSize = newSize(1:2)*2;
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
@@ -194,7 +224,10 @@ config.synthesizer.map.method = 'tile';
 textons = textonizer(img, config.textonizer, true);
 
 refMap = textons.map;
-tilesize = 50;
+config.tilesize = 60;
+config.overlap = round(config.tilesize/6);
+config.simple = 0;
+
 [newTextonMap, newRefMap] = ...
-    mapquilt(textons.map, refMap, newSize, tilesize,round(tilesize / 6));
+    mapquilt(textons.map, refMap, newSize, config);
 

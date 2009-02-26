@@ -34,7 +34,7 @@ end
 datas = cell(length(filenames),1);
 
 % Go over input images
-parfor iter = 1:length(filenames)
+for iter = 1:length(filenames)
     
     currentConfig = config;
     filename = filenames{iter};
