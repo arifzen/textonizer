@@ -62,8 +62,11 @@ end
 %     end
 % end
 
-distMap = tileImage(X, size(Y));
-A = hist(distMap(:), 1:channels)./hist(X(:), 1:channels);
+distMap1 = tileImage(X, size(Y));
+
+distMap = permImage(distMap1);
+
+%A = hist(distMap(:), 1:channels)./hist(X(:), 1:channels);
 
 newH = nan([size(Y,1)-tilesize+1, size(Y,2)-tilesize+1, channels]);
 for iter = 1:channels
@@ -207,14 +210,14 @@ end;
 
 function selfTest()
 
-imageName = 'eggs.PNG';
+imageName = 'Cantera1.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
 
 img = loadImage(imageName);
 newSize = size(img);
-newSize = newSize(1:2)*2;
+newSize = newSize(1:2)*1    ;
 
 config.synthesizer = [];
 config.synthesizer.newSize = newSize;
@@ -227,6 +230,8 @@ refMap = textons.map;
 config.tilesize = 60;
 config.overlap = round(config.tilesize/6);
 config.simple = 0;
+config.weights.spatial = 1;
+config.weights.frequency = 0.5;
 
 [newTextonMap, newRefMap] = ...
     mapquilt(textons.map, refMap, newSize, config);
