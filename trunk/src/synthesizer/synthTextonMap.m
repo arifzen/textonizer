@@ -7,9 +7,11 @@ switch config.method;
         newTextonMap = textonMap;
         newRefMap = refMap;
     case 'quilt'
-        tileSize = 40;
+        quiltConfig = config.quilt;
+        quiltConfig.tilesize = (max(newSize)^0.5)*4;
+        
         [newTextonMap, newRefMap] = ...
-            mapquilt(textonMap, refMap, newSize, tileSize);        
+            mapquilt(textonMap, refMap, newSize, quiltConfig);        
     otherwise
         assert(false,'Bad map method!');
 end

@@ -24,6 +24,7 @@ config.synthesizer.verbose = 1;
 config.synthesizer.newSize = newSize;
 config.synthesizer.method = 'map';
 config.synthesizer.map.method = 'quilt';
+config.synthesizer.map.quilt = [];
 config.synthesizer.scales = [0.5,1];
 config.synthesizer.candidates_max = 1;
 config.synthesizer.weights.area = 0.5;
