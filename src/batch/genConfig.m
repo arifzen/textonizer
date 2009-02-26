@@ -1,4 +1,4 @@
-experimentName = 'batch-10';
+experimentName = 'batch-12';
 
 %
 % Batch
@@ -57,13 +57,13 @@ config.synthesizer.method = 'map';
 config.synthesizer.map.method = 'quilt';
 config.synthesizer.map.quilt.dist.method = 'tile';
 config.synthesizer.map.quilt.weights.spatial = 1;
-config.synthesizer.map.quilt.weights.frequency = 1;
+config.synthesizer.map.quilt.weights.frequency = 0.5;
 
 config.synthesizer.scales = [0.75,1];
 config.synthesizer.candidates_max = 1;
 
-config.synthesizer.weights.area = 0.5;
-config.synthesizer.weights.texton = 0.25;
+config.synthesizer.weights.area = 1.3;
+config.synthesizer.weights.texton = 0.4;
 config.synthesizer.weights.crude = 0.25;
 config.synthesizer.weights.ref = 1;
                 

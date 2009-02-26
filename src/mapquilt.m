@@ -62,8 +62,9 @@ end
 %     end
 % end
 
+disp('Tiling Image');
 distMap1 = tileImage(X, size(Y));
-
+disp('Permutating Image');
 distMap = permImage(distMap1);
 
 %A = hist(distMap(:), 1:channels)./hist(X(:), 1:channels);
