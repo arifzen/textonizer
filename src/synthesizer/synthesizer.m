@@ -230,10 +230,16 @@ for scale = scales
             % Combine energies
             E = (Warea*Earea + Wtexton*Etexton + ...
                 Wcrude*Ecrude + Wref*Eref).*(Edistance.^2);
-            
-            % Decide on suitable location
-            [maxValue,maxInd2] = max(E(:));
-            [drawPoint(1),drawPoint(2)] = ind2sub(size(E),maxInd2);
+
+            % If texton is as lare as the target image
+            if isempty(E)
+                drawPoint = [1,1];
+                maxValue = 1;
+            else
+                % Decide on suitable location
+                [maxValue,maxInd2] = max(E(:));
+                [drawPoint(1),drawPoint(2)] = ind2sub(size(E),maxInd2);                
+            end
             
             candidatePeakEnergy(candidateIter) = maxValue;
             candidatePeakLocation(candidateIter,:) = drawPoint;
