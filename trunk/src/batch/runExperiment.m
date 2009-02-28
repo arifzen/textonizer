@@ -60,7 +60,7 @@ parfor iter = 1:length(filenames)
     
     scaleFactor = 0.8;
     set(gcf, 'PaperPosition', [0.25 2.5 scaleFactor*8 scaleFactor*6]);    
-    print('-painters','-dpng', synthMontageFilename);
+    print('-painters','-dpng', textonMontageFilename);
     close(gcf);
        
     currentConfig.synthesizer.newSize = [size(img,1),size(img,2)].*currentConfig.batch.synth_scale;
@@ -70,7 +70,7 @@ parfor iter = 1:length(filenames)
 
     scaleFactor = 1;
     set(gcf, 'PaperPosition', [0.25 2.5 scaleFactor*8 scaleFactor*6]);    
-    print('-painters','-dpng', textonMontageFilename);
+    print('-painters','-dpng', synthMontageFilename);
     close(gcf);
     
     imwrite(newImg,newImageFilename);
