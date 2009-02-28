@@ -1,0 +1,1255 @@
+#LyX 1.6.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Advanced Graphics Project
+\end_layout
+
+\begin_layout Author
+Chen Goldberg
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+ID: 039571161, E-mail: chengold@tau.ac.IL
+\end_layout
+
+\end_inset
+
+, Eran Cohen
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+ID: 038175436, E-mail: erancoh1@tau.ac.IL
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+USER input is minimal
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this project we deal with texture synthesis.
+ We are given an image of a texture, and we would like to synthesize a new
+ image in the same size or bigger than the original image.
+ These textures are non-stochastic where texture elements can be separated
+ 'easily'.
+ We call these elements "textons".
+ A texton is a fundamental micro-structure in an image.
+\end_layout
+
+\begin_layout Standard
+In the first part of this project the goal is to have an algorithm that
+ extract textons from a given image.
+ After extracting the textons, the algorithm should cluster the textons
+ to sets such that similar textons should be included in the same set.
+ Our algorithm should decide how many sets should be.
+ It is up to us to decide and implement how to cluster the textons and how
+ they are shaped.
+ The input is a color image of a texture.
+ The output should be images of discriminative representatives of each set.
+\end_layout
+
+\begin_layout Standard
+In the literature there are many works that deal with the fundamental components
+ of an image or a texture.
+ Some nomenclatures include texture particles, and some textons.
+ In this work we refer to these image components as 
+\series bold
+semantic textons
+\series default
+.
+ that is a texton we find should have some semantic value for a layman.
+ Examples for such textons can be: an egg, a rock, bird or a buttercup.
+ We also use semantic textons to differentiate it from the texton term used
+ in paper such as 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "key-1"
+
+\end_inset
+
+ which refer to the more visual components of an image (e.g.
+ lines, dots, curves).
+ To avoid confusion we call these 
+\series bold
+visual textons
+\series default
+.
+\end_layout
+
+\begin_layout Standard
+For the problem of texton extraction we offer two solution, each based on
+ different hypotheses.
+ We include both of them because we fail to reach an agreement as to which
+ is better.
+ The following section describes these two methods.
+ The third section describes the software implementation of these methods,
+ followed by a results section and a conclusion.
+\end_layout
+
+\begin_layout Section
+Texton extraction
+\end_layout
+
+\begin_layout Standard
+The basis on which we built our semantic texton extracting method is the
+ clustering of visual textons as described in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "key-1"
+
+\end_inset
+
+: The input image is filtered using a filter bank made of gabor filters
+ in numerous scales and orientations.
+ The result is a feature space descriptor for each pixel, in which each
+ feature reveals information about the surrounding of the original pixel.
+ We then use conventional dimension reduction methods such as PCA to lower
+ the dimensionality of the feature space
+\begin_inset CommandInset citation
+LatexCommand cite
+key "key-3"
+
+\end_inset
+
+.
+ We then add for each pixel its color information and again perform PCA.
+ 
+\end_layout
+
+\begin_layout Standard
+We then perform K-means clustering on the new feature space and relate each
+ pixel to one of the 
+\begin_inset Formula $k$
+\end_inset
+
+ clusters.
+ Each of these pixel clusters stands for a visual texton which is called
+ a texton channel, and together they combine a texton map of the original
+ image.
+ 
+\end_layout
+
+\begin_layout Subsection
+Channel partitioning method
+\end_layout
+
+\begin_layout Standard
+The intuition behind this factorization, is that each texton channel is
+ made out of a group of pixels whose surrounding area behaves the same,
+ thus making them appear as a non-stochastic texture.
+ If we take this intuitive explanation seriously, then we might believe
+ that a texton channel is actually a connected group of the semantic textons
+ we sought finding.
+ All we are left then is to find some way of breaking apart each texton
+ channel to visually separated regions.
+ We call this semantic texton extraction method 
+\begin_inset Quotes eld
+\end_inset
+
+Channel partitioning
+\begin_inset Quotes erd
+\end_inset
+
+ (a.k.a Eran's Method).
+\end_layout
+
+\begin_layout Standard
+Given a texton map of the input image, we work on each texton channel separately.
+ We partition each texton channel to visual elements by applying a standard
+ binary edge detection on it.
+ We then attempt to find connected components (i.e.
+ pixel regions) in the texton channel which aren't separated by the edge
+ map.
+\end_layout
+
+\begin_layout Standard
+We then sort the connected components by their size in pixels, and select
+ the 
+\begin_inset Formula $k$
+\end_inset
+
+ largest, where 
+\begin_inset Formula $k$
+\end_inset
+
+ is the number of textons we wish to obtain per class.
+ The resulting connected set of pixels is considered a texton.
+\end_layout
+
+\begin_layout Subsubsection
+Discussion
+\end_layout
+
+\begin_layout Standard
+In practice, the visual texton analysis step fails to capture whole texture
+ areas which make a single semantic texton.
+ The most obvious case is the one dealing with texton borders: Consider
+ our texton to be a stone, then the stone's body is usually textured uniformly,
+ thus mapped to a single texton channel.
+ However, the borders of such a texton are mapped to different texton channels,
+ which means that a method such as the 
+\begin_inset Quotes eld
+\end_inset
+
+Channel partitioning
+\begin_inset Quotes erd
+\end_inset
+
+ method would overlook the stone being a texton in its entire, and instead
+ relate the border and filling to different semantic textons.
+ 
+\end_layout
+
+\begin_layout Standard
+Furthermore, it is incorrect to assume that the stone's inner region will
+ be mapped to a single texton channel.
+ When the number of texton channels is set too high, even a relatively uniform
+ texture pattern such as the stone's inner region will be separated into
+ different visual textons.
+ Thus, the 
+\begin_inset Quotes eld
+\end_inset
+
+Channel partitioning
+\begin_inset Quotes erd
+\end_inset
+
+ method is very sensitive to the number of visual textons.
+ Moreover, A uniform mapping of an entire texton will only occur when each
+ pixel inside the texton has roughly the same feature distribution.
+ This happens when the entire texton behaves similarly to some of the filters.
+ For example, an egg texton will be captured as a whole by this method,
+ since an eggs behaves much like a gabor filter at a certain scale and orientati
+on.
+ Another example is color separation: with the lack of any significance
+ from the filter bank feature, the only information put into use is the
+ color values, and thus a segmentation according to colors is performed.
+\end_layout
+
+\begin_layout Subsection
+Patch selection method
+\end_layout
+
+\begin_layout Standard
+Thus, it is unreasonable to rely on texton channels alone to encapsulate
+ whole semantic textons.
+ It is therefore a common practice to describe a textured area by the distributi
+on of visual textons over it.
+ Two regions or more are presumed to be of the same texture if the histogram
+ of visual textons of the regions is similar (e.g.
+ via a 
+\begin_inset Formula $\chi^{2}$
+\end_inset
+
+ test).
+ Because texton of the same class are similar to one another, it makes sense
+ to expect them to have similar histograms.
+ Thus, the problem of extracting the textons is solved by clustering areas
+ in the image which have similar histograms.
+\end_layout
+
+\begin_layout Standard
+If we could take every possible continuous subset of pixels from the image
+ and cluster them according to their 
+\begin_inset Formula $\chi^{2}$
+\end_inset
+
+ similarity, then we would hope to obtain a robust texton selection.
+ Under this assumption we have the second texton extraction method: 
+\begin_inset Quotes eld
+\end_inset
+
+Patch selection
+\begin_inset Quotes erd
+\end_inset
+
+ (a.k.a Chen's Method
+\series bold
+).
+\end_layout
+
+\begin_layout Standard
+Given a texton map of the input image, we sample rectangular windows in
+ numerous scales uniformly over the image.
+ For each window we compute the histogram of visual textons within it.
+ We then perform a clustering of the histograms using K-means where 
+\begin_inset Formula $k$
+\end_inset
+
+ is the number of textons we wish to obtain.
+ 
+\end_layout
+
+\begin_layout Standard
+It is important to avoid bias in choosing textons from a specific scale.
+ We attempt to solve this by trying to obtain the same number of samples
+ for each scale.
+ Since large windows overlap greatly and small window don't vary much, we
+ perform a preliminary clustering on each scale separately to assure discriminan
+t representatives.
+\end_layout
+
+\begin_layout Standard
+The final clustering gives us 
+\begin_inset Formula $k$
+\end_inset
+
+ classes of histograms, ordered in significance by their centroid distance.
+ Each histogram is traced back to its window, and this window in its entire
+ is a texton patch.
+\end_layout
+
+\begin_layout Subsubsection
+Discussion
+\end_layout
+
+\begin_layout Standard
+The disadvantage of this method is that an exhaustive search over all windows
+ is improbable, and the probability that a sampled window will capture a
+ Texton in its entire is very unlikely.
+ The greedy heuristic offered does only little to repair that.
+ In addition, the use of window areas adds much noise to the sampled histograms.
+ But an even greater disadvantage is that what we as humans perceive to
+ be a repetitive pattern in an image isn't usually the most common element
+ in the image, and maybe isn't common at all.
+ 
+\end_layout
+
+\begin_layout Section
+Image synthesis
+\end_layout
+
+\begin_layout Standard
+In this section we describe our methods for combining the extracted textons
+ into a new texture image.
+ Our image synthesis procedure uses only texton image data that was extracted
+ in the first part of this excercise.
+ The input for this module is a list of masked texton images, each given
+ with the location in the original image it was extracted from, and it's
+ associated texton channel index, and a target image size.
+ The output is an incomplete image consisiting of only textons and areas
+ of blank canvas.
+ The blank areas are filled in the postprocessing step.
+\end_layout
+
+\begin_layout Standard
+The resulting image should appear as if it was created using the same hidden
+ model used to produce the input image.
+ While there are many existing methods for synthesising textures from example,
+ our solution would have to be original due to the limitation of having
+ to rely solely on texton information.
+ So unlike many popular texture synthesis algorithms do, we are not allowed
+ to access the original image data directly.
+ One such algorithm is 
+\begin_inset Quotes eld
+\end_inset
+
+Image quilting
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+CITE
+\end_layout
+
+\end_inset
+
+ by 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+TODO
+\end_layout
+
+\end_inset
+
+ which achieves high quality results on variety of textures, both stochastic
+ and regular.
+ The algorithm itself is rather simple and very elegant: The target image
+ is traveres in a scanline order one overlapping block at a time, and an
+ optimal candidate block from the source image that minimizes the overlapping
+ error is found.
+ The optimal block is then 
+\begin_inset Quotes eld
+\end_inset
+
+quilted
+\begin_inset Quotes erd
+\end_inset
+
+ into the target image by copying over an optimal seam at each overlapping
+ end.
+ This algorithm 
+\end_layout
+
+\begin_layout Standard
+Our approach is to apply common texture synthesis techniques on the texton
+ data instead of the actual image data.
+ Thus we generate the texton information of the target image before it is
+ created.
+ We then use this textonial information to assist in the process of synthesizing
+ the actual image information.
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Refer the a flow graph
+\end_layout
+
+\end_inset
+
+ The next two subsections discuss these phases.
+\end_layout
+
+\begin_layout Subsection
+Texton map synthesis
+\end_layout
+
+\begin_layout Standard
+In section about texton extraction we say that each pixel of the input image
+ is associated with a single texton, and every texton is associated with
+ a single texton channel, and that a combination of these texton channels
+ constitues a 
+\emph on
+texton map
+\emph default
+ of the source image.
+ A texton map is therefore an 2D array of indices
+\begin_inset Formula $1,\ldots,k$
+\end_inset
+
+ where 
+\begin_inset Formula $k$
+\end_inset
+
+ is the number of texton channels.
+ 
+\end_layout
+
+\begin_layout Standard
+Our goal is then to take the texton map of the source image and create a
+ texton map of the target image.
+ Our hypothesis is that the texton map of an image revelas much of the underlyin
+g structure behind it
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Show example
+\end_layout
+
+\end_inset
+
+ and by synthesizing a new texton map we offer a general blueprint of a
+ good target image.
+ Handeling a texton map instead of actual image data actually simplifies
+ the problem of synthesis, making it more robust to errors and artifacts,
+ and greatly reduces the complexity of the model.
+ On the downside however, this requires the texton extraction process to
+ be very accurate, which is something rarely achieved.
+ Theoretically, having semantic textons would mean that we design the target
+ image by placing semantic objects in such way that they perserve the spatial
+ relations they had in the source image.
+ In this ideal situation our algorithm would most surely produce a structure
+ 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+complete, say something about segmentation and simple model
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Texton distribution analysis
+\end_layout
+
+\begin_layout Standard
+In this section we discuss our method for synthesizing a distribution map.
+ A distribution map is a 2D matrix of indices (
+\begin_inset Formula $1,\ldots,k$
+\end_inset
+
+) which encodes the distribution of each one of the 
+\begin_inset Formula $k$
+\end_inset
+
+ texton channels.
+ This is a simple way for representing a distribution by samples, instead
+ of the formal way of using a model (e.g.
+ a combination of gaussians).
+ For example, the distribution map of the source texton map is the texton
+ map itself.
+ We seek to generate a new distribution map which behaves laregly like the
+ original distribution, but is different.
+\end_layout
+
+\begin_layout Standard
+One general way of making big changes without losing much information, is
+ by making big changes in low frequency and small changes in high frequency.
+ This way the error is less noticeable.
+ This idea motivated us to develop a heuristical method for changing the
+ distribution: First we take the source distribution map (i.e.
+ which is the texton map) and tile it cover the entire target image size.
+ Then, we recursevly exchange both image halfs along a given dimenstion
+ with probability 
+\begin_inset Formula $\nicefrac{1}{2}$
+\end_inset
+
+.
+ We repeat this process alternitavely on each dimension (horizontal and
+ vertical) until given image is too small to split.
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+See ALG
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+The idea is then to move large areas over large distances so to minimize
+ the consistency error.
+ For example, in the first step we split the image into two parts and swap
+ them.
+ Then the consistency error will be very high along the split seam, but
+ all other pixels will stay consistant, and at each step the consitency
+ error diminishes because the swapping distance is exponential getting shorter.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Refer to examples
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The quilting procedure uses such a distribution map in it's considerations
+ for deciding on an optimal block.
+ This way we force the quilting procedure to be diversify it's selection,
+ causing it to produce a texton map which distributes like the distribution
+ map.
+\end_layout
+
+\begin_layout Standard
+Many works in texture synthesis consider textures as samples from probabilistic
+ distributions.
+ By determining the form of these distributions and sampling from them,
+ new textures that are similar to the originals can, in principle, be generated.
+ For example, uniformly sampling the pixel values of the source image would
+ yield a very stochastic target image which would probably look nothing
+ like the orignial.
+ However their color histograms would be proportional to each other.
+ By restricting the sampling to be locally coherent we would get 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+TODO
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Taking this approach for texton map synthesis makes even more sense, because
+ usually the number of texton channels is very low (
+\begin_inset Formula $k\sim4$
+\end_inset
+
+).
+ 
+\end_layout
+
+\begin_layout Standard
+We developed a heuristical method for creating a new sample of the distribution.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Texton map quilting
+\end_layout
+
+\begin_layout Standard
+The texton map quilting is performed much like the texture quilting procedure
+ briefly discussed above.
+ Some neccessary alterations are required, for example the distance function
+ used to compare two blocks is not SSD, but instead is simply the number
+ of non-matching indices (i.e.
+ distance is element-wise inequality).
+ Other than that, the procedure is fairly the same.
+ The tile size used 
+\begin_inset Formula $S_{tile}$
+\end_inset
+
+, is determined automatically using a huerstic estimation we found pleasing.
+ 
+\end_layout
+
+\begin_layout Standard
+In addition to the similarity measure used to select an optimal candiadate
+ block, we also need to take into account distribution maps similarity.
+ To do so, we take histograms of both source and target distribution maps
+ for each window of size 
+\begin_inset Formula $S_{tile}$
+\end_inset
+
+.
+ When we need to fill a block, we take its histogram and find a nearest
+ neighbor over all source histograms.
+ 
+\end_layout
+
+\begin_layout Standard
+This gives us an energy map of blocks having similar texton density.
+ We then combine it with the standard energy map used in image quilting
+ (i.e.
+ the element-wise similarity between blocks) and proceed to select an optimal
+ candidate as expected.
+ The weights used for combining the two measures were fixed based on observation
+s.
+\end_layout
+
+\begin_layout Subsection
+Image synthesis
+\end_layout
+
+\begin_layout Standard
+Having alreay a synthesized a target texton map, we are left with the task
+ of filling it with actual texton image data.
+ In this section we hurostically select a candidate texton and calculate
+ various energy maps for it, then we combine them to find the ideal location
+ to draw the texton at.
+ We do this over multiple scales, going from coarse to fine resolution (typicall
+y 70% and 100%).
+ 
+\end_layout
+
+\begin_layout Standard
+Initially our canvas image is blank, and constitutes our target image.
+ Overtime we add more and more textons to the canvas untill we decide it's
+ sufficiantlly full.
+ This approach of going from texton to image and not the other way around,
+ is not obvious.
+ Ideally, we would have at each iteration test which texton is the best
+ candidate for adding to the canvas.
+ This however is very inefficiant and would take forever to complete.
+ A more realistic approach is to apriorally predict which textons are most
+ likely to score high results for each round, and test only these few candidates.
+ 
+\end_layout
+
+\begin_layout Standard
+The method used to select textons is described in the next subsection.
+ In the section after we describe the process of choosing a suitable location
+ for the texton and drawing it on the canvas.
+\end_layout
+
+\begin_layout Subsubsection
+Texton selection
+\end_layout
+
+\begin_layout Standard
+Texton selection is performed huristically by calculating energy function
+ for each texton and selecting few candidate textons to actually test against
+ the canvas.
+ The combined energy function dimishes to all zeros over time (i.e.
+ no candidates left), and when it does the image synthesis algorithm halts.
+ The energy functions used rely on simple rules that we thought are elementry
+ in the selection of textons (e.g.
+ selecting large textons first, 
+\end_layout
+
+\begin_layout Standard
+When the target image is at the same size of the source image, it makes
+ sense to allow the use of a single instance of every texton.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Texton drawing
+\end_layout
+
+\begin_layout Section
+Postprocessing
+\end_layout
+
+\begin_layout Section
+Implementation
+\end_layout
+
+\begin_layout Standard
+The implementation of these methods was done in Matlab version 2007a.
+ We used libraries found on the Internet which are included in the distribution
+ accompanying this document, along with some standard Matlab toolbars which
+ weren't, such as the Image processing toolbox and statistics toolbox.
+ You can run the code from Matlab using the following instructions:
+\end_layout
+
+\begin_layout LyX-Code
+install;
+\end_layout
+
+\begin_layout LyX-Code
+T = textonizer(loadImage('brick.PNG'), getDefaultConfig(), false);
+\end_layout
+
+\begin_layout LyX-Code
+showTextonPatches(T,10);
+\end_layout
+
+\begin_layout Section
+Results
+\end_layout
+
+\begin_layout Standard
+We've included some of the better and worse results we obtained using our
+ implementation (Figures 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:eranolives"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:eraneggs"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:eranrust"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:eranpaint"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:chenpaint"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:chenflowers"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:chenfabric"
+
+\end_inset
+
+).
+ It is evident that the channel partitioning works well with non rectangular
+ complicated textures as seen in Figures 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:eranolives"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:eraneggs"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:eranrust"
+
+\end_inset
+
+, and fails in cases when the texture changes in distribution, as seen in
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:eranpaint"
+
+\end_inset
+
+.
+ The Patch selection methods, on the other hand, copes well in these cases
+ (Figures 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:chenpaint"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:chenflowers"
+
+\end_inset
+
+), but fails to spot texton that are easily separable from the background
+ (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:chenfabric"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Both methods however failed miserably in cases where objects are clearly
+ separated from background like with the birds and synthetic images.
+ This happens because the gabor filters are too large to sport each texture
+ particle on it's own, and instead captures them as a single texton.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename images/eran/olives.png
+	lyxscale 50
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:eranolives"
+
+\end_inset
+
+Textons extracted from the Olives image using Channel partitioning method.
+ Each row of images stands for a single texton class, and results are sorted
+ by quality from left to right.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename images/eran/eggs.png
+	lyxscale 50
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:eraneggs"
+
+\end_inset
+
+Textons extracted from the Eggs image using Channel partitioning method
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename images/eran/rustspots.png
+	lyxscale 50
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:eranrust"
+
+\end_inset
+
+Textons extracted from the Rust image using Channel partitioning method
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename images/eran/paintpeel.png
+	lyxscale 50
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:eranpaint"
+
+\end_inset
+
+Textons extracted from the Paint peel image using Channel partitioning method.
+ You can see that the method completely missed the peel pattern.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename images/chen/paintpeel.png
+	lyxscale 50
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:chenpaint"
+
+\end_inset
+
+Textons extracted from the Paint peel image using Patch selection methods
+ over 6 visual texton channels using both color and Gabor features.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename images/chen/flowers.png
+	lyxscale 50
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:chenflowers"
+
+\end_inset
+
+Textons extracted from the Flowers image using Patch selection method
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename images/chen/fabric.png
+	lyxscale 50
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:chenfabric"
+
+\end_inset
+
+Textons extracted from the Fabric image using Patch selection method.
+ The method finds more significance and repetitiveness in what happens between
+ the flowers than the actual flower itself.
+ This is a typical drawback of this method.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+The problem of texton extraction is a hard and ill-posed.
+ The question 
+\begin_inset Quotes eld
+\end_inset
+
+what is a texton?
+\begin_inset Quotes erd
+\end_inset
+
+ was raised many times during the making of this part of project, and it
+ was always answered unsatisfyingly.
+ Each of the two methods shown here has it's own bag of problems.
+ We hope that the second part of this project would redeem these methods
+ by showing that a texture can be synthesized from these textons.
+\end_layout
+
+\begin_layout Standard
+We failed to decide on which method is better.
+ While Eran's method produces cleaner more visually appealing results, Chen's
+ method stays more loyal to the definition of textons while compromising
+ on visual attractiveness and human intuition.
+ Perhaps a two-method solution is the right way to go.
+ That is, perhaps synthesizing a texture by combining the textons produced
+ by both methods would provide a more robust solution for the ultimate problem
+ at hand.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-1"
+
+\end_inset
+
+Textons, Contours and Regions: Cue Integration in Image Segmentation / Jitendra
+ Malik, Serge Belongie, Jianbo Shi and Thomas Leung IEE International Conference
+ on Computer Vision 1999
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-3"
+
+\end_inset
+
+Appearance-space texture synthesis .S.
+ Lefebvre, H.
+ Hoppe .ACM Transactions on Graphics (Proc.
+ SIGGRAPH 2006), 25(3), 541-548.
+\end_layout
+
+\end_body
+\end_document
