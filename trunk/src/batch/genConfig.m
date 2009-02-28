@@ -1,4 +1,4 @@
-experimentName = 'batch-16';
+experimentName = 'batch-18';
 
 %
 % Batch
@@ -49,17 +49,17 @@ config.batch.filenames = {...
     'olives.PNG',...
     'rustspots.PNG'};
 
-config.batch.synth_scale = [1.5 1.5];
+config.batch.synth_scale = [2 2];
 
 %
 % Textonizer
 %
 config.textonizer.method = 'standard';
 
-config.textonizer.visual.texton_clusters = 3;
+config.textonizer.visual.texton_clusters = 5;
 config.textonizer.visual.fb.orientations = pi/6;
 config.textonizer.visual.fb.scales = 4;
-config.textonizer.visual.filter_dim = 3;
+config.textonizer.visual.filter_dim = 6;
 config.textonizer.visual.color_features = 'rgb';
 config.textonizer.visual.final_pca = false;
 
@@ -81,7 +81,7 @@ config.synthesizer.map.quilt.weights.spatial = 1;
 config.synthesizer.map.quilt.weights.frequency = 0.5;
 
 config.synthesizer.scales = [0.75,1];
-config.synthesizer.candidates_max = 1;
+config.synthesizer.candidates_max = 2;
 
 config.synthesizer.weights.area = 0.3;
 config.synthesizer.weights.texton = 0.4;
