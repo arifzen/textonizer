@@ -383,11 +383,11 @@ Image synthesis
 \begin_layout Standard
 In this section we describe our methods for combining the extracted textons
  into a new texture image.
- Our image synthesis procedure uses only texton image data that was extracted
- in the first part of this excercise.
- The input for this module is a list of masked texton images, each given
- with the location in the original image it was extracted from, and it's
- associated texton channel index, and a target image size.
+ Our image synthesis procedure uses only image data of the textons that
+ were extracted in the first part of this excercise.
+ Formally, the input for this module is a list of masked texton images,
+ each given with the location in the original image it was extracted from,
+ and it's associated texton channel index, and a target image size.
  The output is an incomplete image consisiting of only textons and areas
  of blank canvas.
  The blank areas are filled in the postprocessing step.
@@ -395,12 +395,38 @@ In this section we describe our methods for combining the extracted textons
 
 \begin_layout Standard
 The resulting image should appear as if it was created using the same hidden
- model used to produce the input image.
+ model used to produce the source image.
  While there are many existing methods for synthesising textures from example,
- our solution would have to be original due to the limitation of having
- to rely solely on texton information.
- So unlike many popular texture synthesis algorithms do, we are not allowed
- to access the original image data directly.
+ our solution would have to be special due to the limitation of having to
+ rely solely on texton information.
+ This means that unlike many popular texture synthesis algorithms we are
+ not allowed to access the original image data directly.
+ 
+\end_layout
+
+\begin_layout Standard
+Our novel approach is to apply common texture synthesis techniques on the
+ texton data instead of the actual image data.
+ Thus we generate the texton information of the target image before it is
+ created.
+ We then use this textonial information to assist in the process of synthesizing
+ the actual image information.
+ The 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Refer the a flow graph
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We are motivated by many great works of image synthesis which don't rely
+ on texton information.
  One such algorithm is 
 \begin_inset Quotes eld
 \end_inset
@@ -449,22 +475,7 @@ quilted
 \end_layout
 
 \begin_layout Standard
-Our approach is to apply common texture synthesis techniques on the texton
- data instead of the actual image data.
- Thus we generate the texton information of the target image before it is
- created.
- We then use this textonial information to assist in the process of synthesizing
- the actual image information.
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-Refer the a flow graph
-\end_layout
-
-\end_inset
-
- The next two subsections discuss these phases.
+The next two subsections discuss these phases.
 \end_layout
 
 \begin_layout Subsection
