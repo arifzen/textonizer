@@ -21,6 +21,8 @@ switch(name)
         result = fullfile(getConst('EXP_PATH'),'results');
     case 'INPUT_PATH'
         result = fullfile(getConst('DATA_PATH'),'inputs');
+    case 'FIGURE_PATH'
+        result = fullfile(getConst('DATA_PATH'),'figures');
     otherwise
         assert(false);        
 end        

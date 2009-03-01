@@ -66,6 +66,7 @@ disp('Tiling Image');
 distMap1 = tileImage(X, size(Y));
 disp('Permutating Image');
 distMap = permImage(distMap1);
+assert(all(hist(distMap1(:),channels) == hist(distMap(:),channels)));
 
 %A = hist(distMap(:), 1:channels)./hist(X(:), 1:channels);
 
@@ -200,9 +201,42 @@ disp('Frequency ratio between input and output is:');
 disp(ratio)
 fprintf('std: %g\n',std(ratio));
 
-
 Y = Y(1:newSize(1),1:newSize(2),1);
 newRefMap = newRefMap(1:newSize(1),1:newSize(2),1);
+
+if true
+    clf;
+    subplot(1,3,1), imagesc(X);
+    title('Source texton map');
+    axis image;
+
+    subplot(1,3,2), imagesc(distMap(1:newSize(1),1:newSize(2),1));
+    title('Target distribution map');
+    axis image;
+
+    subplot(1,3,3), imagesc(Y);
+    title('Target texton map');
+    axis image;
+        
+    scaleFactor = 0.8;
+    set(gcf, 'PaperPosition', [0.25 2.5 scaleFactor*8 scaleFactor*4]);    
+    print('-painters','-dpng', ...
+        fullfile(getConst('FIGURE_PATH'),...
+        sprintf('textonMap%d',round(rand*10000))));    
+    close(gcf);
+        
+%     subplot(3,4,3), imagesc(Edistance);
+%     axis image
+%     set(gca,'Xlim',[0.5,newSize(2)+0.5])
+%     set(gca,'Ylim',[0.5,newSize(1)+0.5])
+%     title('Energy: Distance');
+% 
+%     subplot(3,4,7), imagesc(Earea);
+%     axis image
+%     set(gca,'Xlim',[0.5,newSize(2)+0.5])
+%     set(gca,'Ylim',[0.5,newSize(1)+0.5])
+%     title('Energy: Area');       
+end
 
 function A = filtered_write(A, B, M)
 for i = 1:3,
@@ -211,7 +245,7 @@ end;
 
 function selfTest()
 
-imageName = 'Cantera1.PNG';
+imageName = 'paintpeel.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
@@ -231,7 +265,7 @@ refMap = textons.map;
 config.tilesize = 60;
 config.overlap = round(config.tilesize/6);
 config.simple = 0;
-config.weights.spatial = 1;
+config.weights.spatial = 0.5;
 config.weights.frequency = 0.5;
 
 [newTextonMap, newRefMap] = ...
