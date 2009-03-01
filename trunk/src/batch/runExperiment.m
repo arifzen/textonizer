@@ -68,7 +68,7 @@ parfor iter = 1:length(filenames)
     [newImg, newTextonMap, textonImg, poissonImg] = ...
         synthesizer(img, textons, currentConfig.synthesizer);
 
-    scaleFactor = 1;
+    scaleFactor = 0.8;
     set(gcf, 'PaperPosition', [0.25 2.5 scaleFactor*8 scaleFactor*6]);    
     print('-painters','-dpng', synthMontageFilename);
     close(gcf);

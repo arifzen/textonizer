@@ -1,4 +1,4 @@
-#LyX 1.6.0 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.1 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
@@ -110,6 +110,13 @@ In the first part of this project the goal is to have an algorithm that
 \end_layout
 
 \begin_layout Standard
+The second part of the project deals with synthesizing a texture from the
+ textons obtained in the first part.
+ We didn't explicitly address the seperation of this part to two steps of
+ synthesis (uniform distribution, model distribution), however we did 
+\end_layout
+
+\begin_layout Standard
 In the literature there are many works that deal with the fundamental components
  of an image or a texture.
  Some nomenclatures include texture particles, and some textons.
@@ -138,17 +145,27 @@ visual textons
 \end_layout
 
 \begin_layout Standard
-For the problem of texton extraction we offer two solution, each based on
- different hypotheses.
- We include both of them because we fail to reach an agreement as to which
- is better.
- The following section describes these two methods.
+In the 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "sec:Texton-extraction"
+
+\end_inset
+
+ we deal with the problem of texton extraction.
  The third section describes the software implementation of these methods,
  followed by a results section and a conclusion.
 \end_layout
 
 \begin_layout Section
 Texton extraction
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Texton-extraction"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -405,12 +422,11 @@ The resulting image should appear as if it was created using the same hidden
 \end_layout
 
 \begin_layout Standard
-Our novel approach is to apply common texture synthesis techniques on the
- texton data instead of the actual image data.
- Thus we generate the texton information of the target image before it is
- created.
- We then use this textonial information to assist in the process of synthesizing
- the actual image information.
+Our approach in this work is to apply common texture synthesis techniques
+ on the texton data instead of the actual image data, thus generating the
+ texton information of the target image instead.
+ We then use this texton information to assist in the process of synthesizing
+ the actual image.
  The 
 \begin_inset Note Note
 status open
@@ -425,8 +441,8 @@ Refer the a flow graph
 \end_layout
 
 \begin_layout Standard
-We are motivated by many great works of image synthesis which don't rely
- on texton information.
+We are motivated by significant works in texture synthesis which don't neceserra
+ly rely on texton information.
  One such algorithm is 
 \begin_inset Quotes eld
 \end_inset
@@ -455,12 +471,12 @@ TODO
 
 \end_inset
 
- which achieves high quality results on variety of textures, both stochastic
+ which achieves quality results on a variety of textures, both stochastic
  and regular.
  The algorithm itself is rather simple and very elegant: The target image
  is traveres in a scanline order one overlapping block at a time, and an
  optimal candidate block from the source image that minimizes the overlapping
- error is found.
+ error is obtained at each iteration.
  The optimal block is then 
 \begin_inset Quotes eld
 \end_inset
@@ -471,27 +487,75 @@ quilted
 
  into the target image by copying over an optimal seam at each overlapping
  end.
- This algorithm 
+ 
 \end_layout
 
 \begin_layout Standard
-The next two subsections discuss these phases.
+We use a varitation of 
+\begin_inset Quotes eld
+\end_inset
+
+image quilting
+\begin_inset Quotes erd
+\end_inset
+
+ to synthesize a texton map of the target texture, which we describe in
+ 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "sub:Texton-map-quilting"
+
+\end_inset
+
+.
+ In addition to synthesizing a cohernet texton map we also wish it would
+ maintain the texton distribution of the original texton map.
+ We explain our distribution analysis and synthesis stage on 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "sub:Texton-distribution-analysis"
+
+\end_inset
+
+.
+ Finally in 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "sub:Texture-synthesis"
+
+\end_inset
+
+ we show how we take the synthesized texton map and use it for the actual
+ texture synthesis.
 \end_layout
 
 \begin_layout Subsection
 Texton map synthesis
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Texton-map-synthesis"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-In section about texton extraction we say that each pixel of the input image
- is associated with a single texton, and every texton is associated with
- a single texton channel, and that a combination of these texton channels
- constitues a 
+In 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "sec:Texton-extraction"
+
+\end_inset
+
+ about texton extraction we say that each pixel of the input image is associated
+ with a single texton, and every texton is associated with a single texton
+ channel, and that a combination of these texton channels constitues a 
 \emph on
 texton map
 \emph default
  of the source image.
- A texton map is therefore an 2D array of indices
+ A texton map is therefore an two dimentional matrix of indices
 \begin_inset Formula $1,\ldots,k$
 \end_inset
 
@@ -543,11 +607,18 @@ complete, say something about segmentation and simple model
 
 \begin_layout Subsubsection
 Texton distribution analysis
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Texton-distribution-analysis"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 In this section we discuss our method for synthesizing a distribution map.
- A distribution map is a 2D matrix of indices (
+ A distribution map is a two dimentional matrix of indices (
 \begin_inset Formula $1,\ldots,k$
 \end_inset
 
@@ -561,17 +632,32 @@ In this section we discuss our method for synthesizing a distribution map.
  a combination of gaussians).
  For example, the distribution map of the source texton map is the texton
  map itself.
- We seek to generate a new distribution map which behaves laregly like the
- original distribution, but is different.
 \end_layout
 
 \begin_layout Standard
-One general way of making big changes without losing much information, is
- by making big changes in low frequency and small changes in high frequency.
+Many works in texture synthesis consider textures as samples from probabilistic
+ distributions.
+ By determining the form of these distributions and sampling from them,
+ new textures that are similar to the originals can, in principle, be generated.
+ For example, uniformly sampling pixel values from the source texton map
+ would create a new texton map that maintains the frequency ratios of the
+ textons but completly loses spatial structure.
+ A localized approach is more succesful in maintaining structure.
+\end_layout
+
+\begin_layout Standard
+Informally, we seek to generate a new distribution map which behaves laregly
+ like the original distribution, but is different at large.
+ One general way of making big changes without losing much significant informati
+on is by making big changes in low frequency and small changes in high frequency.
  This way the error is less noticeable.
- This idea motivated us to develop a heuristical method for changing the
- distribution: First we take the source distribution map (i.e.
- which is the texton map) and tile it cover the entire target image size.
+ 
+\end_layout
+
+\begin_layout Standard
+This intuition motivated us to develop a heuristical method for changing
+ the distribution: First we take the source distribution map (i.e.
+ the texton map) and tile it cover the entire target image size.
  Then, we recursevly exchange both image halfs along a given dimenstion
  with probability 
 \begin_inset Formula $\nicefrac{1}{2}$
@@ -603,11 +689,69 @@ The idea is then to move large areas over large distances so to minimize
 \end_layout
 
 \begin_layout Standard
-\begin_inset Note Note
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "fig:dist-paint-peel"
+
+\end_inset
+
+ shows a distribution map generated using this process.
+ The global distribution of textons of both source and target maps is identical
+ (although visually we might percieve otherwise), and some density patterns
+ from the original appear in the target.
+ One apperant shortcoming of the algorithm is that it makes the map more
+ sparse and less condense than it originally was.
+ Although this implies the model is inaccurate, one should keep in mind
+ that the quilting processes doesn't rely on density map alone and that
+ slight noise in the model isn't significant.
+ An example of this is shown in 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "fig:dist-peel-equalweights"
+
+\end_inset
+
+ where we also use the spatial similarity discussed in the next subsection.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
 status open
 
 \begin_layout Plain Layout
-Refer to examples
+\begin_inset Graphics
+	filename D:/Chen/Textonizer/data/figures/textonMap2955.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:dist-paint-peel"
+
+\end_inset
+
+On the left there is the texton map of 
+\begin_inset Quotes eld
+\end_inset
+
+paint peel
+\begin_inset Quotes erd
+\end_inset
+
+ image.
+ The target texton map was generated by solely relying on distribution affinity
+ during the quilting process (i.e.
+ spatial affinity was given zero weight).
+ 
 \end_layout
 
 \end_inset
@@ -615,29 +759,57 @@ Refer to examples
 
 \end_layout
 
-\begin_layout Standard
-The quilting procedure uses such a distribution map in it's considerations
- for deciding on an optimal block.
- This way we force the quilting procedure to be diversify it's selection,
- causing it to produce a texton map which distributes like the distribution
- map.
+\begin_layout Plain Layout
+
 \end_layout
 
-\begin_layout Standard
-Many works in texture synthesis consider textures as samples from probabilistic
- distributions.
- By determining the form of these distributions and sampling from them,
- new textures that are similar to the originals can, in principle, be generated.
- For example, uniformly sampling the pixel values of the source image would
- yield a very stochastic target image which would probably look nothing
- like the orignial.
- However their color histograms would be proportional to each other.
- By restricting the sampling to be locally coherent we would get 
-\begin_inset Note Note
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
 status open
 
 \begin_layout Plain Layout
-TODO
+\begin_inset Graphics
+	filename D:/Chen/Textonizer/data/figures/textonMap8367.png
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:dist-peel-equalweights"
+
+\end_inset
+
+On the left there is the texton map of 
+\begin_inset Quotes eld
+\end_inset
+
+paint peel
+\begin_inset Quotes erd
+\end_inset
+
+ image like in 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "fig:dist-paint-peel"
+
+\end_inset
+
+.
+ Here the target texton map was generated by using equal weights for both
+ distribution and spatial energy functions.
+ The result appears less sparse and inherits more of the patterns of the
+ source image.
+ However it comes in the sacrifice of not following the distribution map
+ and thus the distribution in the resulting texton map is slightly different
+ than the original.
 \end_layout
 
 \end_inset
@@ -645,120 +817,188 @@ TODO
 
 \end_layout
 
-\begin_layout Standard
-Taking this approach for texton map synthesis makes even more sense, because
- usually the number of texton channels is very low (
-\begin_inset Formula $k\sim4$
-\end_inset
+\begin_layout Plain Layout
 
-).
- 
 \end_layout
 
-\begin_layout Standard
-We developed a heuristical method for creating a new sample of the distribution.
- 
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsubsection
 Texton map quilting
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Texton-map-quilting"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 The texton map quilting is performed much like the texture quilting procedure
  briefly discussed above.
- Some neccessary alterations are required, for example the distance function
- used to compare two blocks is not SSD, but instead is simply the number
- of non-matching indices (i.e.
- distance is element-wise inequality).
- Other than that, the procedure is fairly the same.
- The tile size used 
+ The block size used 
 \begin_inset Formula $S_{tile}$
 \end_inset
 
-, is determined automatically using a huerstic estimation we found pleasing.
- 
+, is determined automatically using a huerstic based on impirical evidences.
+ We traverse the target texton map one overlapping block at a time and search
+ nearest neighbor blocks in the source map for both spatial similarity and
+ density similarity.
 \end_layout
 
 \begin_layout Standard
-In addition to the similarity measure used to select an optimal candiadate
- block, we also need to take into account distribution maps similarity.
- To do so, we take histograms of both source and target distribution maps
- for each window of size 
-\begin_inset Formula $S_{tile}$
+The texton classes density of each block is simply the histogram of texton
+ classes within it.
+ When reaching a new block, we calculate it's goal density in the target
+ distribution map.
+ This density is then compared against every single density in the source
+ map using a 
+\begin_inset Formula $\chi^{2}$
+\end_inset
+
+ distance.
+ An energy function for class density 
+\begin_inset Formula $E_{frequency}$
+\end_inset
+
+ is then constructed by dividing the minimum distance with all distances.
+\end_layout
+
+\begin_layout Standard
+Similarly we construct a spatial energy function 
+\begin_inset Formula $E_{spatial}$
+\end_inset
+
+ by calculating distances between block pixels.
+ The distance function used to compare two blocks is obviously not SSD like
+ is common with textures, but instead measures the number of non-matching
+ indices element-wise.
+\end_layout
+
+\begin_layout Standard
+Finally we lineraliy combine the two energy functions 
+\begin_inset Formula \[
+E_{block}=W_{spatial}\cdot E_{spatial}+W_{frequency}\cdot E_{frequency}\]
+
+\end_inset
+
+and select the block having peak value along with few other blocks significantly
+ close as candidates.
+ From these we randomally select a single block to be drawn in the current
+ location.
+\end_layout
+
+\begin_layout Standard
+Drawing the block is performed much like 
+\begin_inset Quotes eld
+\end_inset
+
+image quilting
+\begin_inset Quotes erd
 \end_inset
 
 .
- When we need to fill a block, we take its histogram and find a nearest
- neighbor over all source histograms.
+ That is we find along both overlapping ends of the block (e.g.
+ up and left) a seam which minimizes the overlap error created by taking
+ the absolute difference between the two overlapping blocks.
+ The result is an almost seamless embedding of the block which would otherwise
+ create very crude and noticeable artifacts along the ovelapping regions.
  
 \end_layout
 
-\begin_layout Standard
-This gives us an energy map of blocks having similar texton density.
- We then combine it with the standard energy map used in image quilting
- (i.e.
- the element-wise similarity between blocks) and proceed to select an optimal
- candidate as expected.
- The weights used for combining the two measures were fixed based on observation
-s.
-\end_layout
-
 \begin_layout Subsection
-Image synthesis
+Texture synthesis
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Texture-synthesis"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 Having alreay a synthesized a target texton map, we are left with the task
- of filling it with actual texton image data.
- In this section we hurostically select a candidate texton and calculate
- various energy maps for it, then we combine them to find the ideal location
- to draw the texton at.
+ of filling it with image data.
+ In this section we describe our heuristic procedure for doing this.
+ Obviously this is a very hard task involving myriad dependencies and very
+ high computational requirements.
+ This task is even a hard for a human to solve (imagine having a 1,000 pieces
+ puzzle with no target drawing on the box cover).
+ 
+\end_layout
+
+\begin_layout Standard
+Therefore we propose an iterative greedy algorithm which given a texton
+ attempts to find an optimial location for it on the canvas.
+ Once a location is chosen the texton is drawn there and doesn't ever move
+ until the algorithm hatls.
+ Formally, we iterativley select a candidate texton and calculate various
+ energy maps for it, then we combine them to find the optimal location for
+ the texton.
  We do this over multiple scales, going from coarse to fine resolution (typicall
 y 70% and 100%).
  
 \end_layout
 
 \begin_layout Standard
-Initially our canvas image is blank, and constitutes our target image.
- Overtime we add more and more textons to the canvas untill we decide it's
- sufficiantlly full.
- This approach of going from texton to image and not the other way around,
- is not obvious.
- Ideally, we would have at each iteration test which texton is the best
- candidate for adding to the canvas.
- This however is very inefficiant and would take forever to complete.
- A more realistic approach is to apriorally predict which textons are most
- likely to score high results for each round, and test only these few candidates.
- 
-\end_layout
+Each iteration requires us to select a texton whos addition to the canvas
+ would be the most benefitial.
+ However computing the optimal energy for each texton at every iteration
+ is very expensive.
+ Instead we try to predict which textons will make good candidates to add
+ to the contemporary canvas.
+ We discuss this process of prediction and textion selection in 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "sub:Texton-selection"
 
-\begin_layout Standard
-The method used to select textons is described in the next subsection.
- In the section after we describe the process of choosing a suitable location
- for the texton and drawing it on the canvas.
+\end_inset
+
+.
+ Finding the optimal location for placing the selected texton and embedding
+ it there is discussed in 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "sub:Texton-drawing"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsubsection
 Texton selection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Texton-selection"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 Texton selection is performed huristically by calculating custom energy
- functions for each texton and selecting few candidate textons to actually
- test against the canvas.
- The combined energy function dimishes to all zeros over time (i.e.
- no candidates left), and when it does the image synthesis algorithm halts.
- The energy functions used rely on simple rules that we thought are elementry
- in the selection of textons (e.g.
+ functions for each texton and selecting the textons most likely to fit
+ nicely in the canvas.
+ When the the combined energy vector 
+\begin_inset Formula $E_{textons}$
+\end_inset
+
+ is all zeros the texture synthesis process halts.
+ The energy functions we defined express simple rules that we thought are
+ elementry in the prior selection of textons (e.g.
  selecting large textons first, not repeatedly selecting the same texton,
  ...).
 \end_layout
 
 \begin_layout Standard
-The energy functions are multiplied together, and the textons with the highest
- scores are selected as candidates.
- The following is a description of the energy functions used:
+The following lists the texton properties we rate:
 \end_layout
 
 \begin_layout Description
@@ -775,7 +1015,7 @@ d with a single texton.
  texton would appear multiple times in the map.
  Therefore, a crude estimation of a limit for every texton is calculated:
 \begin_inset Formula \[
-E_{limit}=\left\lceil \frac{\mbox{Number of pixels in target}}{\mbox{Number of texton pixels}}\right\rceil \]
+E_{limit}=\mbox{Number of times added}-\left\lceil \frac{\mbox{Number of pixels in target}}{\mbox{Number of texton pixels}}\right\rceil \]
 
 \end_inset
 
@@ -828,35 +1068,44 @@ E_{textons}=E_{size}\cdot E_{limit}\cdot E_{class}\cdot E_{variation}\]
 
 \end_inset
 
-
+and textons with highest energy will be selected as candidates for the next
+ step.
 \end_layout
 
 \begin_layout Subsubsection
-Texton drawing
+Texton embedding 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Texton-drawing"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 Given a small set of candidate textons, we need to find a location on the
- canvas where the textons fits with highest energy level.
- Among all candidates only the one with the highest value is actually selected
- and drawn.
- Finding such a location is again a huristic procedure of combining custom
- energy functions which we found usefull for the task at hand.
-\end_layout
-
-\begin_layout Standard
-The energy functions calculated are:
+ canvas where the textons fit best.
+ Among all candidates only the one with the best fit is ultimatly added
+ to the canvas.
+ Again we define 5 proprties of a good fit and provide each with an energy
+ functions that attemtps to evaluate it.
+ These proprties are:
 \end_layout
 
 \begin_layout Description
 Area An inverse of the texton mask is taken and extracted from the source
  image.
- The result is a rectengular hollow border-like image which shows the close
- surrounding of the texton.
- This image is then filtered accross the image to calculte SSD distance
- for each block.
+ The result is a rectengular hollow border-like image which shows the surroundin
+g of the texton.
  The surrounding area of a texton is usefull for properly stiching the texton
  in an area it belongs to.
+ We compute 
+\begin_inset Formula $E_{area}$
+\end_inset
+
+ by measuring SSD for every location in the canvas.
+ 
 \end_layout
 
 \begin_layout Description
@@ -864,72 +1113,83 @@ Texton
 \begin_inset space ~
 \end_inset
 
-map The candidate texton belongs to a single texton class.
- The target texton map we showed how to create in section 
+map In order to maintain the texture structure we want to draw the texton
+ on pixels that were designated to its class in the synthesized texton map.
+ We compute 
+\begin_inset Formula $E_{texton}$
+\end_inset
+
+ by measuring how much the texton mask correlates with the texton map in
+ every position.
+\end_layout
+
+\begin_layout Description
+Reference When we quilt the texton map we keep track of which texton is
+ drawn where (see 
 \begin_inset Note Note
 status open
 
 \begin_layout Plain Layout
-sec
+TODO figure
 \end_layout
 
 \end_inset
 
- is filtered with the texton map shape using element-wise equality similarity
- measure.
- This energy function is responsible for maintaining the texture design
- given by the texton distribution.
+).
+ This means that each pixel in the target texton map is associated with
+ a texton.
+ We compute 
+\begin_inset Formula $E_{reference}$
+\end_inset
+
+ by convolving the texton mask with the its expression in the reference
+ map.
 \end_layout
 
 \begin_layout Description
-Reference Since each pixel in the target texton map is associated with a
- single texton, it makes sense to add a texton where it was supposed to
- be.
- Usually reference textons are scattered over the image, however it still
- proves to be a very good estimate for positioning.
-\end_layout
+Distance We wish the texton to overwrite as little existing canvas pixels
+ as possible.
+ The distance energy function 
+\begin_inset Formula $E_{distance}$
+\end_inset
 
-\begin_layout Description
-Distance The less a drawn texton overrides exisiting canvas pixels, the
- better we are at.
- The distance energy function measures how many pixels are at risk of being
- overwritten.
+ measures the number of blank pixels in every location of the canvas.
  
 \end_layout
 
 \begin_layout Description
-Crude The texton is compared against the crude low resolution texture already
- calculated (if exists).
+Crude If a low resolution version of the texture exist then we use it to
+ assist us in finding a position for the candidate texton.
  
+\begin_inset Formula $E_{crude}$
+\end_inset
+
+ is computed by convolving the texton with the crude image.
 \end_layout
 
 \begin_layout Standard
 Each of these energy function produces a value between zero and one.
- The energy functions are finally combined by a weighted sum:
+ The energy functions are finally combined
 \begin_inset Formula \[
-\left(W_{area}\cdot E_{area}+W_{texton}\cdot E_{texton}+W_{crude}\cdot E_{crude}+W_{ref}\cdot E_{ref}\right)\cdot E_{distance}^{2}\]
+E_{location}=\left(W_{area}\cdot E_{area}+W_{texton}\cdot E_{texton}+W_{crude}\cdot E_{crude}+W_{ref}\cdot E_{ref}\right)\cdot E_{distance}^{2}\]
 
 \end_inset
 
+and the optimal location and candidate texton are selected.
+ The texton is then drawn to the canvas at that location without using any
+ special blending techniques (feathering, transparcy...).
+\end_layout
 
+\begin_layout Subsection
+Hole-filling
 \end_layout
 
 \begin_layout Standard
-The optimal location and candidate texton are selected.
- The texton is then drawn to the screen without any feathering or blending
- of any sort.
- 
-\end_layout
-
-\begin_layout Section
-Postprocessing
-\end_layout
-
-\begin_layout Standard
-The resulting image from the synyhesis phase is incomplete, having some
- blank places.
- Completing the texture is an easy challenge, one with many algorithms in
- the literature.
+The image resulting from the synyhesis phase is incomplete, having some
+ empty pixel.
+ Hole-filling in an image is the process for seamlessly filling the holes
+ with image data.
+ one with many algorithms in the literature.
  We use a method inspired by 
 \begin_inset Note Note
 status open
@@ -942,19 +1202,25 @@ REF
 
  which uses poission completeion to produce a smooth low frequency completion
  of the unkown values.
- This is usefull as a rough prediction of the actual texture originally
- used there.
+ This is useful as a very crude estimation of the missing texture data.
 \end_layout
 
 \begin_layout Standard
-The holes are no filled, however the smooth low frequency is clearly noticeable
- in medium to large areas.
- To solve this we use a quick and dirty scheme that traveres the target
- image like in image quilting, only here it finds the nearest neighbor of
- the complete image block.
- Although this uses the source image directly without going through texton
- data, be assured that only areas left blank in the image after synthesis
- are writeable.
+We then traverse the canvas in a scan-line order and replace every unkown
+ value with the most similar block in the original texture image.
+ This use of the source image is minor as usually the holes are small enough
+ for the poisson compeltion to provide a good enough estimation (see figures
+ 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+TODO
+\end_layout
+
+\end_inset
+
+).
  
 \end_layout
 
@@ -963,7 +1229,7 @@ Implementation
 \end_layout
 
 \begin_layout Standard
-The implementation of these methods was done in Matlab version 2007a.
+The implementation of these methods was done in Matlab version 2008b.
  We used libraries found on the Internet which are included in the distribution
  accompanying this document, along with some standard Matlab toolbars which
  weren't, such as the Image processing toolbox and statistics toolbox.
@@ -980,6 +1246,533 @@ T = textonizer(loadImage('brick.PNG'), getDefaultConfig(), false);
 
 \begin_layout LyX-Code
 showTextonPatches(T,10);
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout Standard
+The configuration variable is optional as the default parameter values are
+ usually satisfying.
+ Nevertheless we include in 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "tab:Parameters"
+
+\end_inset
+
+ a complete list of all input parameters used in our system.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="16" columns="3">
+<features>
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Name
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Desciption
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Default value
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.textonizer.visual.texton_clusters
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Number of texton classes extracted from the input image
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.textonizer.visual.fb.orientations
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Number of orientations of Gabor filters used
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\nicefrac{\pi}{6}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.textonizer.visual.fb.scales
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Number of scales of Gabor filters used
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.textonizer.visual.filter_dim
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Number of dimentions reduction after Gabor filters
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.textonizer.visual.color_features
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Type of color features used (rgb or ntsc)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ntsc
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.textonizer.visual.final_pca
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+The addition of a final PCA
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+true
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.textonizer.semantic.min_texton_area
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Minimal texton size allowed
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+25
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.synthesizer.map.quilt.weights.spatial
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.synthesizer.map.quilt.weights.frequency
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.synthesizer.scales
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[0.75,1\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.synthesizer.candidates_max
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.synthesizer.weights.area
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.3
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.synthesizer.weights.texton
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.4
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.synthesizer.weights.crude
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.25
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+config.synthesizer.weights.ref
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Parameters"
+
+\end_inset
+
+Parameters
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -1442,14 +2235,73 @@ Textons, Contours and Regions: Cue Integration in Image Segmentation / Jitendra
 \begin_layout Bibliography
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
-key "key-3"
+label "2"
+key "key-1"
 
 \end_inset
 
 Appearance-space texture synthesis .S.
  Lefebvre, H.
  Hoppe .ACM Transactions on Graphics (Proc.
- SIGGRAPH 2006), 25(3), 541-548.
+ SIGGRAPH 2006), 25(3), 541-548
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "3"
+key "key-3"
+
+\end_inset
+
+.Drori, I., Cohen-Or, D., and Yeshurun, H.
+ 2003.
+ Fragment-based image completion.
+ ACM Trans.
+ Graph.
+ 22, 3 (Jul.
+ 2003), 303-312.
+ DOI= http://doi.acm.org/10.1145/882262.882267 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "4"
+key "key-2"
+
+\end_inset
+
+Efros, A.
+ A.
+ and Freeman, W.
+ T.
+ 2001.
+ Image quilting for texture synthesis and transfer.
+ In Proceedings of the 28th Annual Conference on Computer Graphics and interacti
+ve Techniques SIGGRAPH '01.
+ ACM, New York, NY, 341-346.
+ DOI= http://doi.acm.org/10.1145/383259.383296 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "5"
+key "key-4"
+
+\end_inset
+
+De Bonet, J.
+ S.
+ 1997.
+ Multiresolution sampling procedure for analysis and synthesis of texture
+ images.
+ In Proceedings of the 24th Annual Conference on Computer Graphics and interacti
+ve Techniques International Conference on Computer Graphics and Interactive
+ Techniques.
+ ACM Press/Addison-Wesley Publishing Co., New York, NY, 361-368.
+ DOI= http://doi.acm.org/10.1145/258734.258882 
 \end_layout
 
 \end_body
