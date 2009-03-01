@@ -1,4 +1,4 @@
-#LyX 1.6.1 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.0 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
@@ -733,28 +733,218 @@ Texton selection
 \end_layout
 
 \begin_layout Standard
-Texton selection is performed huristically by calculating energy function
- for each texton and selecting few candidate textons to actually test against
- the canvas.
+Texton selection is performed huristically by calculating custom energy
+ functions for each texton and selecting few candidate textons to actually
+ test against the canvas.
  The combined energy function dimishes to all zeros over time (i.e.
  no candidates left), and when it does the image synthesis algorithm halts.
  The energy functions used rely on simple rules that we thought are elementry
  in the selection of textons (e.g.
- selecting large textons first, 
+ selecting large textons first, not repeatedly selecting the same texton,
+ ...).
 \end_layout
 
 \begin_layout Standard
-When the target image is at the same size of the source image, it makes
- sense to allow the use of a single instance of every texton.
+The energy functions are multiplied together, and the textons with the highest
+ scores are selected as candidates.
+ The following is a description of the energy functions used:
+\end_layout
+
+\begin_layout Description
+Size It is usefull to select textons by the size, largerst to smallest.
+ Large textons are usefull for orientation of other smaller textons, and
+ selecting them earlier also reduces the amount of overrides.
+\end_layout
+
+\begin_layout Description
+Limit Since the target texton map is constructed by permutating the pixels
+ of the source texton map, then each pixel in the target texton map is associate
+d with a single texton.
+ Since target maps can be larger than soruce map, it is possible that a
+ texton would appear multiple times in the map.
+ Therefore, a crude estimation of a limit for every texton is calculated:
+\begin_inset Formula \[
+E_{limit}=\left\lceil \frac{\mbox{Number of pixels in target}}{\mbox{Number of texton pixels}}\right\rceil \]
+
+\end_inset
+
+Therefore a texton can only be added up to 
+\begin_inset Formula $limit_{t}$
+\end_inset
+
+ times.
  
+\end_layout
+
+\begin_layout Description
+Class
+\begin_inset space ~
+\end_inset
+
+distribution It is also usefull to add textons from multiple texton classes
+ so that the class distribution at any given moment is roughly the same
+ as the target's.
+ Therefore a histogram of texton already drawn to the canvas is calculated,
+ and the class distribution energy is used to boost texton belonging to
+ a less represented class in relation to the target distribution.
+\begin_inset Formula \[
+E_{class}=1-\frac{\mbox{Canvas texton histogram}}{\mbox{Target texton histogram}}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+Variation Whenever a texton is added to the canvas it is counted.
+ We already make sure that it's counter won't reach beyound the limit.
+ But this alone won't pervent the same texton from being selected repeatedly.
+ The variation energy function makes sure this won't happen by considerably
+ downscaling added textons, making them unlikley to be chosen until everyone
+ else is selected atleast that many times.
+\begin_inset Formula \[
+E_{variation}=e^{-10\cdot\mbox{Texton counter}}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Finally the combined energy function is of the form
+\begin_inset Formula \[
+E_{textons}=E_{size}\cdot E_{limit}\cdot E_{class}\cdot E_{variation}\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsubsection
 Texton drawing
 \end_layout
 
+\begin_layout Standard
+Given a small set of candidate textons, we need to find a location on the
+ canvas where the textons fits with highest energy level.
+ Among all candidates only the one with the highest value is actually selected
+ and drawn.
+ Finding such a location is again a huristic procedure of combining custom
+ energy functions which we found usefull for the task at hand.
+\end_layout
+
+\begin_layout Standard
+The energy functions calculated are:
+\end_layout
+
+\begin_layout Description
+Area An inverse of the texton mask is taken and extracted from the source
+ image.
+ The result is a rectengular hollow border-like image which shows the close
+ surrounding of the texton.
+ This image is then filtered accross the image to calculte SSD distance
+ for each block.
+ The surrounding area of a texton is usefull for properly stiching the texton
+ in an area it belongs to.
+\end_layout
+
+\begin_layout Description
+Texton
+\begin_inset space ~
+\end_inset
+
+map The candidate texton belongs to a single texton class.
+ The target texton map we showed how to create in section 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+sec
+\end_layout
+
+\end_inset
+
+ is filtered with the texton map shape using element-wise equality similarity
+ measure.
+ This energy function is responsible for maintaining the texture design
+ given by the texton distribution.
+\end_layout
+
+\begin_layout Description
+Reference Since each pixel in the target texton map is associated with a
+ single texton, it makes sense to add a texton where it was supposed to
+ be.
+ Usually reference textons are scattered over the image, however it still
+ proves to be a very good estimate for positioning.
+\end_layout
+
+\begin_layout Description
+Distance The less a drawn texton overrides exisiting canvas pixels, the
+ better we are at.
+ The distance energy function measures how many pixels are at risk of being
+ overwritten.
+ 
+\end_layout
+
+\begin_layout Description
+Crude The texton is compared against the crude low resolution texture already
+ calculated (if exists).
+ 
+\end_layout
+
+\begin_layout Standard
+Each of these energy function produces a value between zero and one.
+ The energy functions are finally combined by a weighted sum:
+\begin_inset Formula \[
+\left(W_{area}\cdot E_{area}+W_{texton}\cdot E_{texton}+W_{crude}\cdot E_{crude}+W_{ref}\cdot E_{ref}\right)\cdot E_{distance}^{2}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The optimal location and candidate texton are selected.
+ The texton is then drawn to the screen without any feathering or blending
+ of any sort.
+ 
+\end_layout
+
 \begin_layout Section
 Postprocessing
+\end_layout
+
+\begin_layout Standard
+The resulting image from the synyhesis phase is incomplete, having some
+ blank places.
+ Completing the texture is an easy challenge, one with many algorithms in
+ the literature.
+ We use a method inspired by 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+REF 
+\end_layout
+
+\end_inset
+
+ which uses poission completeion to produce a smooth low frequency completion
+ of the unkown values.
+ This is usefull as a rough prediction of the actual texture originally
+ used there.
+\end_layout
+
+\begin_layout Standard
+The holes are no filled, however the smooth low frequency is clearly noticeable
+ in medium to large areas.
+ To solve this we use a quick and dirty scheme that traveres the target
+ image like in image quilting, only here it finds the nearest neighbor of
+ the complete image block.
+ Although this uses the source image directly without going through texton
+ data, be assured that only areas left blank in the image after synthesis
+ are writeable.
+ 
 \end_layout
 
 \begin_layout Section
