@@ -1,6 +1,6 @@
 function result = getConst(name)
 
-rootPath = fullfile(fileparts(mfilename('fullpath')),'..');
+rootPath = fullfile(fileparts(mfilename('fullpath')),'..','..');
 
 switch(name)
     case 'ROOT'
