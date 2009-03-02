@@ -1,8 +1,22 @@
-function newImg = textonSynth(img, config, cache)
+function newImg = textonSynth(img, newSize, config, cache)
 
-if nargin < 3
+if nargin < 1
     selfTest();
     return;
+end
+if nargin < 2
+    newSize = size(img);
+    newSize = newSize(1:2);
+end
+if nargin < 3
+    config = getDefaultConfig();
+end
+if nargin < 4
+    cache = true;
+end
+
+if ~isempty(newSize)
+    config.synthesizer.newSize = newSize;
 end
 
 [textons] = textonizer(img, config.textonizer, cache);
