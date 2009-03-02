@@ -204,7 +204,7 @@ fprintf('std: %g\n',std(ratio));
 Y = Y(1:newSize(1),1:newSize(2),1);
 newRefMap = newRefMap(1:newSize(1),1:newSize(2),1);
 
-if true
+if false
     clf;
     subplot(1,3,1), imagesc(X);
     title('Source texton map');
@@ -245,7 +245,7 @@ end;
 
 function selfTest()
 
-imageName = 'paintpeel.PNG';
+imageName = 'stones.PNG';
 
 textonConfig = load(fullfile(getConst('EXP_CONFIG_PATH'), 'final-all-03'), 'config');
 config.textonizer = textonConfig.config;
